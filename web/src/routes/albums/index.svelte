@@ -8,6 +8,7 @@
 	import type { Load } from '@sveltejs/kit';
 	import SideBar from '$lib/components/shared-components/side-bar/side-bar.svelte';
 	import { AlbumResponseDto, api } from '@api';
+	import { AlbumsBloc } from './albums-bloc';
 
 	export const load: Load = async () => {
 		try {
@@ -32,7 +33,6 @@
 
 <script lang="ts">
 	import AlbumCard from '$lib/components/album-page/album-card.svelte';
-	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import ContextMenu from '$lib/components/shared-components/context-menu/context-menu.svelte';
 	import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
@@ -41,75 +41,9 @@
 	export let user: ImmichUser;
 	export let albums: AlbumResponseDto[];
 
-	let isShowContextMenu = false;
-	let contextMenuPosition = { x: 0, y: 0 };
-	let targetAlbum: AlbumResponseDto;
+	const bloc = new AlbumsBloc({ albums });
 
-	onMount(async () => {
-		const { data } = await api.albumApi.getAllAlbums();
-		albums = data;
-
-		// Delete album that has no photos and is named 'Untitled'
-		for (const album of albums) {
-			if (album.albumName === 'Untitled' && album.assets.length === 0) {
-				const isDeleted = await autoDeleteAlbum(album);
-
-				if (isDeleted) {
-					albums = albums.filter((a) => a.id !== album.id);
-				}
-			}
-		}
-	});
-
-	const createAlbum = async () => {
-		try {
-			const { data: newAlbum } = await api.albumApi.createAlbum({
-				albumName: 'Untitled'
-			});
-
-			goto('/albums/' + newAlbum.id);
-		} catch (e) {
-			console.log('Error [createAlbum] ', e);
-		}
-	};
-
-	const autoDeleteAlbum = async (album: AlbumResponseDto) => {
-		try {
-			await api.albumApi.deleteAlbum(album.id);
-			return true;
-		} catch (e) {
-			console.log('Error [autoDeleteAlbum] ', e);
-			return false;
-		}
-	};
-
-	const userDeleteMenu = async () => {
-		if (
-			window.confirm(
-				`Are you sure you want to delete album ${targetAlbum.albumName}? If the album is shared, other users will not be able to access it.`
-			)
-		) {
-			try {
-				await api.albumApi.deleteAlbum(targetAlbum.id);
-				albums = albums.filter((a) => a.id !== targetAlbum.id);
-			} catch (e) {
-				console.log('Error [userDeleteMenu] ', e);
-			}
-		}
-
-		isShowContextMenu = false;
-	};
-
-	const showAlbumContextMenu = (event: CustomEvent, album: AlbumResponseDto) => {
-		targetAlbum = album;
-
-		contextMenuPosition = {
-			x: event.detail.x,
-			y: event.detail.y
-		};
-
-		isShowContextMenu = !isShowContextMenu;
-	};
+	onMount(() => bloc.init());
 </script>
 
 <svelte:head>
@@ -133,7 +67,7 @@
 				</div>
 
 				<div>
-					<button on:click={createAlbum} class="immich-text-button text-sm">
+					<button on:click={() => bloc.createAlbum()} class="immich-text-button text-sm">
 						<span>
 							<PlusBoxOutline size="18" />
 						</span>
@@ -151,7 +85,7 @@
 				{#each albums as album}
 					{#key album.id}
 						<a sveltekit:prefetch href={`albums/${album.id}`}>
-							<AlbumCard {album} on:showalbumcontextmenu={(e) => showAlbumContextMenu(e, album)} />
+							<AlbumCard {album} on:showalbumcontextmenu={(e) => bloc.showAlbumContextMenu(e, album)} />
 						</a>
 					{/key}
 				{/each}
@@ -173,9 +107,9 @@
 	</section>
 
 	<!-- Context Menu -->
-	{#if isShowContextMenu}
-		<ContextMenu {...contextMenuPosition} on:clickoutside={() => (isShowContextMenu = false)}>
-			<MenuOption on:click={userDeleteMenu}>
+	{#if bloc.isShowContextMenu}
+		<ContextMenu {...bloc.contextMenuPosition} on:clickoutside={() => (bloc.isShowContextMenu = false)}>
+			<MenuOption on:click={() => bloc.deleteSelectedAlbum()}>
 				<span class="flex place-items-center place-content-center gap-2">
 					<DeleteOutline size="18" />
 					<p>Delete album</p>
