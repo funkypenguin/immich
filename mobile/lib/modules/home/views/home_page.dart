@@ -67,13 +67,17 @@ class HomePage extends HookConsumerWidget {
 
           imageGridGroup.add(
             DailyTitleText(
+              key: Key('${dateGroup.toString()}title'),
               isoDate: dateGroup,
               assetGroup: immichAssetList,
             ),
           );
 
           imageGridGroup.add(
-            ImageGrid(assetGroup: immichAssetList),
+            ImageGrid(
+                key: Key('${dateGroup.toString()}items'),
+                assetGroup: immichAssetList
+            ),
           );
 
           lastMonth = currentMonth;
