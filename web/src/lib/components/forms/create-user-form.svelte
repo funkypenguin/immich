@@ -1,122 +1,153 @@
 <script lang="ts">
-  import { api } from '@api';
-  import { createEventDispatcher } from 'svelte';
+  import FullScreenModal from '$lib/components/shared-components/full-screen-modal.svelte';
+  import { featureFlags } from '$lib/stores/server-config.store';
+  import { userInteraction } from '$lib/stores/user.svelte';
+  import { ByteUnit, convertToBytes } from '$lib/utils/byte-units';
+  import { handleError } from '$lib/utils/handle-error';
+  import { createUserAdmin } from '@immich/sdk';
+  import { t } from 'svelte-i18n';
+  import Button from '../elements/buttons/button.svelte';
+  import Slider from '../elements/slider.svelte';
+  import PasswordField from '../shared-components/password-field.svelte';
 
-  let error: string;
-  let success: string;
+  interface Props {
+    onClose: () => void;
+    onSubmit: () => void;
+    onCancel: () => void;
+    oauthEnabled?: boolean;
+  }
 
-  let password = '';
-  let confirmPassowrd = '';
+  let { onClose, onSubmit, onCancel, oauthEnabled = false }: Props = $props();
 
-  let canCreateUser = false;
+  let error = $state('');
+  let success = $state('');
 
-  $: {
-    if (password !== confirmPassowrd && confirmPassowrd.length > 0) {
-      error = 'Password does not match';
+  let email = $state('');
+  let password = $state('');
+  let confirmPassword = $state('');
+  let name = $state('');
+  let shouldChangePassword = $state(true);
+  let notify = $state(true);
+
+  let canCreateUser = $state(false);
+  let quotaSize: number | undefined = $state();
+  let isCreatingUser = $state(false);
+
+  let quotaSizeInBytes = $derived(quotaSize ? convertToBytes(quotaSize, ByteUnit.GiB) : null);
+  let quotaSizeWarning = $derived(
+    quotaSizeInBytes && userInteraction.serverInfo && quotaSizeInBytes > userInteraction.serverInfo.diskSizeRaw,
+  );
+
+  $effect(() => {
+    if (password !== confirmPassword && confirmPassword.length > 0) {
+      error = $t('password_does_not_match');
       canCreateUser = false;
     } else {
       error = '';
       canCreateUser = true;
     }
-  }
-  const dispatch = createEventDispatcher();
+  });
 
-  async function registerUser(event: SubmitEvent) {
-    if (canCreateUser) {
+  async function registerUser() {
+    if (canCreateUser && !isCreatingUser) {
+      isCreatingUser = true;
       error = '';
 
-      const formElement = event.target as HTMLFormElement;
+      try {
+        await createUserAdmin({
+          userAdminCreateDto: {
+            email,
+            password,
+            shouldChangePassword,
+            name,
+            quotaSizeInBytes,
+            notify,
+          },
+        });
 
-      const form = new FormData(formElement);
+        success = $t('new_user_created');
 
-      const email = form.get('email');
-      const password = form.get('password');
-      const firstName = form.get('firstName');
-      const lastName = form.get('lastName');
+        onSubmit();
 
-      const {status} = await api.userApi.createUser({
-        email: String(email),
-        password: String(password),
-        firstName: String(firstName),
-        lastName: String(lastName)
-      });
-
-      if (status === 201) {
-        success = 'New user created';
-
-        dispatch('user-created');
         return;
-      } else {
-        error = 'Error create user account';
+      } catch (error) {
+        handleError(error, $t('errors.unable_to_create_user'));
+      } finally {
+        isCreatingUser = false;
       }
     }
   }
+
+  const onsubmit = async (event: Event) => {
+    event.preventDefault();
+    await registerUser();
+  };
 </script>
 
-<div class="border bg-white p-4 shadow-sm w-[500px] rounded-3xl py-8">
-    <div class="flex flex-col place-items-center place-content-center gap-4 px-4">
-        <img class="text-center" src="/immich-logo.svg" height="100" width="100" alt="immich-logo"/>
-        <h1 class="text-2xl text-immich-primary font-medium">Create new user</h1>
-        <p class="text-sm border rounded-md p-4 font-mono text-gray-600">
-            Please provide your user with the password, they will have to change it on their first sign
-            in.
-        </p>
+<FullScreenModal title={$t('create_new_user')} showLogo {onClose}>
+  <form {onsubmit} autocomplete="off" id="create-new-user-form">
+    <div class="my-4 flex flex-col gap-2">
+      <label class="immich-form-label" for="email">{$t('email')}</label>
+      <input class="immich-form-input" id="email" bind:value={email} type="email" required />
     </div>
 
-    <form on:submit|preventDefault={registerUser} autocomplete="off">
-        <div class="m-4 flex flex-col gap-2">
-            <label class="immich-form-label" for="email">Email</label>
-            <input class="immich-form-input" id="email" name="email" type="email" required/>
-        </div>
+    {#if $featureFlags.email}
+      <div class="my-4 flex place-items-center justify-between gap-2">
+        <label class="text-sm dark:text-immich-dark-fg" for="send-welcome-email">
+          {$t('admin.send_welcome_email')}
+        </label>
+        <Slider id="send-welcome-email" bind:checked={notify} />
+      </div>
+    {/if}
 
-        <div class="m-4 flex flex-col gap-2">
-            <label class="immich-form-label" for="password">Password</label>
-            <input
-                    class="immich-form-input"
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    bind:value={password}
-            />
-        </div>
+    <div class="my-4 flex flex-col gap-2">
+      <label class="immich-form-label" for="password">{$t('password')}</label>
+      <PasswordField id="password" bind:password autocomplete="new-password" required={!oauthEnabled} />
+    </div>
 
-        <div class="m-4 flex flex-col gap-2">
-            <label class="immich-form-label" for="confirmPassword">Confirm Password</label>
-            <input
-                    class="immich-form-input"
-                    id="confirmPassword"
-                    name="password"
-                    type="password"
-                    required
-                    bind:value={confirmPassowrd}
-            />
-        </div>
+    <div class="my-4 flex flex-col gap-2">
+      <label class="immich-form-label" for="confirmPassword">{$t('confirm_password')}</label>
+      <PasswordField
+        id="confirmPassword"
+        bind:password={confirmPassword}
+        autocomplete="new-password"
+        required={!oauthEnabled}
+      />
+    </div>
 
-        <div class="m-4 flex flex-col gap-2">
-            <label class="immich-form-label" for="firstName">First Name</label>
-            <input class="immich-form-input" id="firstName" name="firstName" type="text" required/>
-        </div>
+    <div class="my-4 flex place-items-center justify-between gap-2">
+      <label class="text-sm dark:text-immich-dark-fg" for="require-password-change">
+        {$t('admin.require_password_change_on_login')}
+      </label>
+      <Slider id="require-password-change" bind:checked={shouldChangePassword} />
+    </div>
 
-        <div class="m-4 flex flex-col gap-2">
-            <label class="immich-form-label" for="lastName">Last Name</label>
-            <input class="immich-form-input" id="lastName" name="lastName" type="text" required/>
-        </div>
+    <div class="my-4 flex flex-col gap-2">
+      <label class="immich-form-label" for="name">{$t('name')}</label>
+      <input class="immich-form-input" id="name" bind:value={name} type="text" required />
+    </div>
 
-        {#if error}
-            <p class="text-red-400 ml-4 text-sm">{error}</p>
+    <div class="my-4 flex flex-col gap-2">
+      <label class="flex items-center gap-2 immich-form-label" for="quotaSize">
+        {$t('admin.quota_size_gib')}
+        {#if quotaSizeWarning}
+          <p class="text-red-400 text-sm">{$t('errors.quota_higher_than_disk_size')}</p>
         {/if}
+      </label>
+      <input class="immich-form-input" id="quotaSize" type="number" min="0" bind:value={quotaSize} />
+    </div>
 
-        {#if success}
-            <p class="text-immich-primary ml-4 text-sm">{success}</p>
-        {/if}
-        <div class="flex w-full">
-            <button
-                    type="submit"
-                    class="m-4 bg-immich-primary hover:bg-immich-primary/75 px-6 py-3 text-white rounded-full shadow-md w-full font-medium"
-            >Create
-            </button
-            >
-        </div>
-    </form>
-</div>
+    {#if error}
+      <p class="text-sm text-red-400">{error}</p>
+    {/if}
+
+    {#if success}
+      <p class="text-sm text-immich-primary">{success}</p>
+    {/if}
+  </form>
+
+  {#snippet stickyBottom()}
+    <Button color="gray" fullwidth onclick={onCancel}>{$t('cancel')}</Button>
+    <Button type="submit" disabled={isCreatingUser} fullwidth form="create-new-user-form">{$t('create')}</Button>
+  {/snippet}
+</FullScreenModal>

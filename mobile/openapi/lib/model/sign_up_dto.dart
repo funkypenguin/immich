@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -14,75 +14,58 @@ class SignUpDto {
   /// Returns a new [SignUpDto] instance.
   SignUpDto({
     required this.email,
+    required this.name,
     required this.password,
-    required this.firstName,
-    required this.lastName,
   });
 
   String email;
 
+  String name;
+
   String password;
-
-  String firstName;
-
-  String lastName;
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is SignUpDto &&
-     other.email == email &&
-     other.password == password &&
-     other.firstName == firstName &&
-     other.lastName == lastName;
+    other.email == email &&
+    other.name == name &&
+    other.password == password;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
     (email.hashCode) +
-    (password.hashCode) +
-    (firstName.hashCode) +
-    (lastName.hashCode);
+    (name.hashCode) +
+    (password.hashCode);
 
   @override
-  String toString() => 'SignUpDto[email=$email, password=$password, firstName=$firstName, lastName=$lastName]';
+  String toString() => 'SignUpDto[email=$email, name=$name, password=$password]';
 
   Map<String, dynamic> toJson() {
-    final _json = <String, dynamic>{};
-      _json[r'email'] = email;
-      _json[r'password'] = password;
-      _json[r'firstName'] = firstName;
-      _json[r'lastName'] = lastName;
-    return _json;
+    final json = <String, dynamic>{};
+      json[r'email'] = this.email;
+      json[r'name'] = this.name;
+      json[r'password'] = this.password;
+    return json;
   }
 
   /// Returns a new [SignUpDto] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
   static SignUpDto? fromJson(dynamic value) {
+    upgradeDto(value, "SignUpDto");
     if (value is Map) {
       final json = value.cast<String, dynamic>();
 
-      // Ensure that the map contains the required keys.
-      // Note 1: the values aren't checked for validity beyond being non-null.
-      // Note 2: this code is stripped in release mode!
-      assert(() {
-        requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "SignUpDto[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "SignUpDto[$key]" has a null value in JSON.');
-        });
-        return true;
-      }());
-
       return SignUpDto(
         email: mapValueOfType<String>(json, r'email')!,
+        name: mapValueOfType<String>(json, r'name')!,
         password: mapValueOfType<String>(json, r'password')!,
-        firstName: mapValueOfType<String>(json, r'firstName')!,
-        lastName: mapValueOfType<String>(json, r'lastName')!,
       );
     }
     return null;
   }
 
-  static List<SignUpDto>? listFromJson(dynamic json, {bool growable = false,}) {
+  static List<SignUpDto> listFromJson(dynamic json, {bool growable = false,}) {
     final result = <SignUpDto>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -113,12 +96,10 @@ class SignUpDto {
   static Map<String, List<SignUpDto>> mapListFromJson(dynamic json, {bool growable = false,}) {
     final map = <String, List<SignUpDto>>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        final value = SignUpDto.listFromJson(entry.value, growable: growable,);
-        if (value != null) {
-          map[entry.key] = value;
-        }
+        map[entry.key] = SignUpDto.listFromJson(entry.value, growable: growable,);
       }
     }
     return map;
@@ -127,9 +108,8 @@ class SignUpDto {
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
     'email',
+    'name',
     'password',
-    'firstName',
-    'lastName',
   };
 }
 

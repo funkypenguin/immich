@@ -24,7 +24,6 @@
 
 # Flutter/Dart/Pub related
 **/doc/api/
-**/ios/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -49,3 +48,11 @@ app.*.map.json
 
 # Fastlane
 ios/fastlane/report.xml
+
+# Isar
+default.isar
+default.isar.lock
+libisar.so
+
+# FVM Version
+.fvm/

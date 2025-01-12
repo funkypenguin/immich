@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "node16",
     "strict": true,
     "declaration": true,
     "removeComments": true,
@@ -8,31 +8,19 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "target": "es2017",
+    "target": "es2022",
+    "moduleResolution": "node16",
+    "lib": ["dom", "es2023"],
     "sourceMap": true,
     "outDir": "./dist",
     "incremental": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "preserveWatchOutput": true,
     "baseUrl": "./",
-    "paths": {
-      "@app/database": [
-        "libs/database/src"
-      ],
-      "@app/database/*": [
-        "libs/database/src/*"
-      ],
-      "@app/job": [
-        "libs/job/src"
-      ],
-      "@app/job/*": [
-        "libs/job/src/*"
-      ]
-    }
+    "jsx": "react",
+    "types": ["vitest/globals"],
+    "noErrorTruncation": true
   },
-  "exclude": [
-    "dist",
-    "node_modules",
-    "upload"
-  ]
+  "exclude": ["dist", "node_modules", "upload"]
 }

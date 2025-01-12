@@ -1,102 +1,64 @@
 <script lang="ts">
-	import { api } from '@api';
-	import { createEventDispatcher } from 'svelte';
-	import type { ImmichUser } from '../../models/immich-user';
+  import Button from '../elements/buttons/button.svelte';
+  import PasswordField from '../shared-components/password-field.svelte';
+  import { updateMyUser } from '@immich/sdk';
+  import { t } from 'svelte-i18n';
 
-	export let user: ImmichUser;
-	let error: string;
-	let success: string;
+  interface Props {
+    onSuccess: () => void;
+  }
 
-	let password: string = '';
-	let confirmPassowrd: string = '';
+  let { onSuccess }: Props = $props();
 
-	let changeChagePassword = false;
+  let errorMessage: string = $state('');
 
-	$: {
-		if (password !== confirmPassowrd && confirmPassowrd.length > 0) {
-			error = 'Password does not match';
-			changeChagePassword = false;
-		} else {
-			error = '';
-			changeChagePassword = true;
-		}
-	}
+  let password = $state('');
+  let passwordConfirm = $state('');
 
-	const dispatch = createEventDispatcher();
+  let valid = $state(false);
 
-	async function changePassword() {
-		if (changeChagePassword) {
-			error = '';
+  $effect(() => {
+    if (password !== passwordConfirm && passwordConfirm.length > 0) {
+      errorMessage = $t('password_does_not_match');
+      valid = false;
+    } else {
+      errorMessage = '';
+      valid = true;
+    }
+  });
 
-			const { status } = await api.userApi.updateUser({
-				id: user.id,
-				password: String(password),
-				shouldChangePassword: false
-			});
+  async function changePassword() {
+    if (valid) {
+      errorMessage = '';
 
-			if (status === 200) {
-				dispatch('success');
-				return;
-			} else {
-				console.error('Error changing password');
-			}
-		}
-	}
+      await updateMyUser({ userUpdateMeDto: { password: String(password) } });
+
+      onSuccess();
+    }
+  }
+
+  const onsubmit = async (event: Event) => {
+    event.preventDefault();
+    await changePassword();
+  };
 </script>
 
-<div class="border bg-white p-4 shadow-sm w-[500px] rounded-md py-8">
-	<div class="flex flex-col place-items-center place-content-center gap-4 px-4">
-		<img class="text-center" src="/immich-logo.svg" height="100" width="100" alt="immich-logo" />
-		<h1 class="text-2xl text-immich-primary font-medium">Change Password</h1>
+<form {onsubmit} method="post" class="mt-5 flex flex-col gap-5">
+  <div class="flex flex-col gap-2">
+    <label class="immich-form-label" for="password">{$t('new_password')}</label>
+    <PasswordField id="password" bind:password autocomplete="new-password" />
+  </div>
 
-		<p class="text-sm border rounded-md p-4 font-mono text-gray-600">
-			Hi {user.firstName}
-			{user.lastName} ({user.email}),
-			<br />
-			<br />
-			This is either the first time you are signing into the system or a request has been made to change
-			your password. Please enter the new password below.
-		</p>
-	</div>
+  <div class="flex flex-col gap-2">
+    <label class="immich-form-label" for="confirmPassword">{$t('confirm_password')}</label>
+    <PasswordField id="confirmPassword" bind:password={passwordConfirm} autocomplete="new-password" />
+  </div>
 
-	<form on:submit|preventDefault={changePassword} method="post" autocomplete="off">
-		<div class="m-4 flex flex-col gap-2">
-			<label class="immich-form-label" for="password">New Password</label>
-			<input
-				class="immich-form-input"
-				id="password"
-				name="password"
-				type="password"
-				required
-				bind:value={password}
-			/>
-		</div>
+  {#if errorMessage}
+    <p class="text-sm text-red-400">{errorMessage}</p>
+  {/if}
 
-		<div class="m-4 flex flex-col gap-2">
-			<label class="immich-form-label" for="confirmPassword">Confirm Password</label>
-			<input
-				class="immich-form-input"
-				id="confirmPassword"
-				name="password"
-				type="password"
-				required
-				bind:value={confirmPassowrd}
-			/>
-		</div>
-
-		{#if error}
-			<p class="text-red-400 ml-4 text-sm">{error}</p>
-		{/if}
-
-		{#if success}
-			<p class="text-immich-primary ml-4 text-sm">{success}</p>
-		{/if}
-		<div class="flex w-full">
-			<button
-				type="submit"
-				class="m-4 p-2 bg-immich-primary hover:bg-immich-primary/75 px-6 py-4 text-white rounded-md shadow-md w-full"
-				>Change Password</button
-			>
-		</div>
-	</form>
-</div>
+  <div class="my-5 flex w-full">
+    <Button type="submit" size="lg" fullwidth>{$t('to_change_password')}</Button>
+  </div>
+</form>

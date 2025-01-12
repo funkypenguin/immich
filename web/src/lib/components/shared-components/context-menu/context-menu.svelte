@@ -1,43 +1,76 @@
 <script lang="ts">
-	import { clickOutside } from '$lib/utils/click-outside';
-	import { createEventDispatcher } from 'svelte';
-	import { quintOut } from 'svelte/easing';
-	import { slide } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
+  import { slide } from 'svelte/transition';
+  import { clickOutside } from '$lib/actions/click-outside';
+  import type { Snippet } from 'svelte';
 
-	/**
-	 * x coordiante of the context menu.
-	 * @type {number}
-	 */
-	export let x: number = 0;
+  interface Props {
+    isVisible?: boolean;
+    direction?: 'left' | 'right';
+    x?: number;
+    y?: number;
+    id?: string | undefined;
+    ariaLabel?: string | undefined;
+    ariaLabelledBy?: string | undefined;
+    ariaActiveDescendant?: string | undefined;
+    menuElement?: HTMLUListElement | undefined;
+    onClose?: (() => void) | undefined;
+    children?: Snippet;
+  }
 
-	/**
-	 * x coordiante of the context menu.
-	 * @type {number}
-	 */
-	export let y: number = 0;
+  let {
+    isVisible = false,
+    direction = 'right',
+    x = 0,
+    y = 0,
+    id = undefined,
+    ariaLabel = undefined,
+    ariaLabelledBy = undefined,
+    ariaActiveDescendant = undefined,
+    menuElement = $bindable(),
+    onClose = undefined,
+    children,
+  }: Props = $props();
 
-	const dispatch = createEventDispatcher();
+  let left: number = $state(0);
+  let top: number = $state(0);
 
-	let menuEl: HTMLElement;
+  // We need to bind clientHeight since the bounding box may return a height
+  // of zero when starting the 'slide' animation.
+  let height: number = $state(0);
 
-	$: (() => {
-		if (!menuEl) return;
+  $effect(() => {
+    if (menuElement) {
+      const rect = menuElement.getBoundingClientRect();
+      const directionWidth = direction === 'left' ? rect.width : 0;
+      const menuHeight = Math.min(menuElement.clientHeight, height) || 0;
 
-		const rect = menuEl.getBoundingClientRect();
-		x = Math.min(window.innerWidth - rect.width, x);
-		if (y > window.innerHeight - rect.height) {
-			y -= rect.height;
-		}
-	})();
+      left = Math.min(window.innerWidth - rect.width, x - directionWidth);
+      top = Math.min(window.innerHeight - menuHeight, y);
+    }
+  });
 </script>
 
 <div
-	transition:slide={{ duration: 200, easing: quintOut }}
-	bind:this={menuEl}
-	class="absolute bg-white w-[175px] z-[99999] rounded-lg shadow-md"
-	style={`top: ${y}px; left: ${x}px;`}
-	use:clickOutside
-	on:out-click={() => dispatch('clickoutside')}
+  bind:clientHeight={height}
+  class="fixed z-10 min-w-[200px] w-max max-w-[300px] overflow-hidden rounded-lg shadow-lg"
+  style:left="{left}px"
+  style:top="{top}px"
+  transition:slide={{ duration: 250, easing: quintOut }}
+  use:clickOutside={{ onOutclick: onClose }}
 >
-	<slot />
+  <ul
+    {id}
+    aria-activedescendant={ariaActiveDescendant ?? ''}
+    aria-label={ariaLabel}
+    aria-labelledby={ariaLabelledBy}
+    bind:this={menuElement}
+    class:max-h-[100vh]={isVisible}
+    class:max-h-0={!isVisible}
+    class="flex flex-col transition-all duration-[250ms] ease-in-out outline-none"
+    role="menu"
+    tabindex="-1"
+  >
+    {@render children?.()}
+  </ul>
 </div>

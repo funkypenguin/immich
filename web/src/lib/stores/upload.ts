@@ -1,45 +1,136 @@
-import { writable, derived } from 'svelte/store';
-import type { UploadAsset } from '../models/upload-asset';
+import { derived, writable } from 'svelte/store';
+import { UploadState, type UploadAsset } from '../models/upload-asset';
 
 function createUploadStore() {
-	const uploadAssets = writable<Array<UploadAsset>>([]);
+  const uploadAssets = writable<Array<UploadAsset>>([]);
+  const stats = writable<{ errors: number; duplicates: number; success: number; total: number }>({
+    errors: 0,
+    duplicates: 0,
+    success: 0,
+    total: 0,
+  });
 
-	const { subscribe } = uploadAssets;
+  const { subscribe } = uploadAssets;
 
-	const isUploading = derived(uploadAssets, ($uploadAssets) => {
-		return $uploadAssets.length > 0 ? true : false;
-	});
+  const isUploading = derived(uploadAssets, (items) => items.length > 0);
+  const isDismissible = derived(uploadAssets, (items) =>
+    items.some((item) => item.state === UploadState.ERROR || item.state === UploadState.DUPLICATED),
+  );
+  const remainingUploads = derived(
+    uploadAssets,
+    (values) => values.filter((a) => a.state === UploadState.PENDING || a.state === UploadState.STARTED).length,
+  );
 
-	const addNewUploadAsset = (newAsset: UploadAsset) => {
-		uploadAssets.update((currentSet) => [...currentSet, newAsset]);
-	};
+  const addItem = (newAsset: UploadAsset) => {
+    uploadAssets.update(($assets) => {
+      const duplicate = $assets.find((asset) => asset.id === newAsset.id);
+      if (duplicate) {
+        return $assets.map((asset) => (asset.id === newAsset.id ? newAsset : asset));
+      }
 
-	const updateProgress = (id: string, progress: number) => {
-		uploadAssets.update((uploadingAssets) => {
-			return uploadingAssets.map((asset) => {
-				if (asset.id == id) {
-					return {
-						...asset,
-						progress: progress
-					};
-				}
+      stats.update((stats) => {
+        stats.total++;
+        return stats;
+      });
 
-				return asset;
-			});
-		});
-	};
+      $assets.push({
+        ...newAsset,
+        speed: 0,
+        state: UploadState.PENDING,
+        progress: 0,
+        eta: 0,
+      });
 
-	const removeUploadAsset = (id: string) => {
-		uploadAssets.update((uploadingAsset) => uploadingAsset.filter((a) => a.id != id));
-	};
+      return $assets;
+    });
+  };
 
-	return {
-		subscribe,
-		isUploading,
-		addNewUploadAsset,
-		updateProgress,
-		removeUploadAsset
-	};
+  const updateProgress = (id: string, loaded: number, total: number) => {
+    updateAssetMap(id, (v) => {
+      const uploadSpeed = v.startDate ? loaded / ((Date.now() - v.startDate) / 1000) : 0;
+      return {
+        ...v,
+        progress: Math.floor((loaded / total) * 100),
+        speed: uploadSpeed,
+        eta: Math.ceil((total - loaded) / uploadSpeed),
+      };
+    });
+  };
+
+  const markStarted = (id: string) => {
+    updateItem(id, {
+      state: UploadState.STARTED,
+      startDate: Date.now(),
+    });
+  };
+
+  const updateAssetMap = (id: string, mapper: (assets: UploadAsset) => UploadAsset) => {
+    uploadAssets.update((uploadingAssets) => {
+      return uploadingAssets.map((asset) => {
+        if (asset.id == id) {
+          return mapper(asset);
+        }
+        return asset;
+      });
+    });
+  };
+
+  const updateItem = (id: string, partialObject: Partial<UploadAsset>) => {
+    updateAssetMap(id, (v) => ({ ...v, ...partialObject }));
+  };
+
+  const removeItem = (id: string) => {
+    uploadAssets.update((uploadingAsset) => uploadingAsset.filter((a) => a.id != id));
+  };
+
+  const dismissErrors = () =>
+    uploadAssets.update((value) =>
+      value.filter((e) => e.state !== UploadState.ERROR && e.state !== UploadState.DUPLICATED),
+    );
+
+  const reset = () => {
+    uploadAssets.set([]);
+    stats.set({ errors: 0, duplicates: 0, success: 0, total: 0 });
+  };
+
+  const track = (value: 'success' | 'duplicate' | 'error') => {
+    stats.update((stats) => {
+      switch (value) {
+        case 'success': {
+          stats.success++;
+          break;
+        }
+
+        case 'duplicate': {
+          stats.duplicates++;
+          break;
+        }
+
+        case 'error': {
+          stats.errors++;
+          break;
+        }
+      }
+
+      return stats;
+    });
+  };
+
+  return {
+    stats,
+    remainingUploads,
+    isDismissible,
+    isUploading,
+    track,
+    dismissErrors,
+    reset,
+    markStarted,
+    addItem,
+    updateItem,
+    removeItem,
+    updateProgress,
+    subscribe,
+  };
 }
 
 export const uploadAssetsStore = createUploadStore();

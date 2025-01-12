@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -13,104 +13,80 @@ part of openapi.api;
 class UserResponseDto {
   /// Returns a new [UserResponseDto] instance.
   UserResponseDto({
-    required this.id,
+    required this.avatarColor,
     required this.email,
-    required this.firstName,
-    required this.lastName,
-    required this.createdAt,
+    required this.id,
+    required this.name,
+    required this.profileChangedAt,
     required this.profileImagePath,
-    required this.shouldChangePassword,
-    required this.isAdmin,
   });
 
-  String id;
+  UserAvatarColor avatarColor;
 
   String email;
 
-  String firstName;
+  String id;
 
-  String lastName;
+  String name;
 
-  String createdAt;
+  DateTime profileChangedAt;
 
   String profileImagePath;
 
-  bool shouldChangePassword;
-
-  bool isAdmin;
-
   @override
   bool operator ==(Object other) => identical(this, other) || other is UserResponseDto &&
-     other.id == id &&
-     other.email == email &&
-     other.firstName == firstName &&
-     other.lastName == lastName &&
-     other.createdAt == createdAt &&
-     other.profileImagePath == profileImagePath &&
-     other.shouldChangePassword == shouldChangePassword &&
-     other.isAdmin == isAdmin;
+    other.avatarColor == avatarColor &&
+    other.email == email &&
+    other.id == id &&
+    other.name == name &&
+    other.profileChangedAt == profileChangedAt &&
+    other.profileImagePath == profileImagePath;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (id.hashCode) +
+    (avatarColor.hashCode) +
     (email.hashCode) +
-    (firstName.hashCode) +
-    (lastName.hashCode) +
-    (createdAt.hashCode) +
-    (profileImagePath.hashCode) +
-    (shouldChangePassword.hashCode) +
-    (isAdmin.hashCode);
+    (id.hashCode) +
+    (name.hashCode) +
+    (profileChangedAt.hashCode) +
+    (profileImagePath.hashCode);
 
   @override
-  String toString() => 'UserResponseDto[id=$id, email=$email, firstName=$firstName, lastName=$lastName, createdAt=$createdAt, profileImagePath=$profileImagePath, shouldChangePassword=$shouldChangePassword, isAdmin=$isAdmin]';
+  String toString() => 'UserResponseDto[avatarColor=$avatarColor, email=$email, id=$id, name=$name, profileChangedAt=$profileChangedAt, profileImagePath=$profileImagePath]';
 
   Map<String, dynamic> toJson() {
-    final _json = <String, dynamic>{};
-      _json[r'id'] = id;
-      _json[r'email'] = email;
-      _json[r'firstName'] = firstName;
-      _json[r'lastName'] = lastName;
-      _json[r'createdAt'] = createdAt;
-      _json[r'profileImagePath'] = profileImagePath;
-      _json[r'shouldChangePassword'] = shouldChangePassword;
-      _json[r'isAdmin'] = isAdmin;
-    return _json;
+    final json = <String, dynamic>{};
+      json[r'avatarColor'] = this.avatarColor;
+      json[r'email'] = this.email;
+      json[r'id'] = this.id;
+      json[r'name'] = this.name;
+      json[r'profileChangedAt'] = this.profileChangedAt.toUtc().toIso8601String();
+      json[r'profileImagePath'] = this.profileImagePath;
+    return json;
   }
 
   /// Returns a new [UserResponseDto] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
   static UserResponseDto? fromJson(dynamic value) {
+    upgradeDto(value, "UserResponseDto");
     if (value is Map) {
       final json = value.cast<String, dynamic>();
 
-      // Ensure that the map contains the required keys.
-      // Note 1: the values aren't checked for validity beyond being non-null.
-      // Note 2: this code is stripped in release mode!
-      assert(() {
-        requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "UserResponseDto[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "UserResponseDto[$key]" has a null value in JSON.');
-        });
-        return true;
-      }());
-
       return UserResponseDto(
-        id: mapValueOfType<String>(json, r'id')!,
+        avatarColor: UserAvatarColor.fromJson(json[r'avatarColor'])!,
         email: mapValueOfType<String>(json, r'email')!,
-        firstName: mapValueOfType<String>(json, r'firstName')!,
-        lastName: mapValueOfType<String>(json, r'lastName')!,
-        createdAt: mapValueOfType<String>(json, r'createdAt')!,
+        id: mapValueOfType<String>(json, r'id')!,
+        name: mapValueOfType<String>(json, r'name')!,
+        profileChangedAt: mapDateTime(json, r'profileChangedAt', r'')!,
         profileImagePath: mapValueOfType<String>(json, r'profileImagePath')!,
-        shouldChangePassword: mapValueOfType<bool>(json, r'shouldChangePassword')!,
-        isAdmin: mapValueOfType<bool>(json, r'isAdmin')!,
       );
     }
     return null;
   }
 
-  static List<UserResponseDto>? listFromJson(dynamic json, {bool growable = false,}) {
+  static List<UserResponseDto> listFromJson(dynamic json, {bool growable = false,}) {
     final result = <UserResponseDto>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -141,12 +117,10 @@ class UserResponseDto {
   static Map<String, List<UserResponseDto>> mapListFromJson(dynamic json, {bool growable = false,}) {
     final map = <String, List<UserResponseDto>>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        final value = UserResponseDto.listFromJson(entry.value, growable: growable,);
-        if (value != null) {
-          map[entry.key] = value;
-        }
+        map[entry.key] = UserResponseDto.listFromJson(entry.value, growable: growable,);
       }
     }
     return map;
@@ -154,14 +128,12 @@ class UserResponseDto {
 
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
-    'id',
+    'avatarColor',
     'email',
-    'firstName',
-    'lastName',
-    'createdAt',
+    'id',
+    'name',
+    'profileChangedAt',
     'profileImagePath',
-    'shouldChangePassword',
-    'isAdmin',
   };
 }
 

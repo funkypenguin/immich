@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -38,7 +38,7 @@ class AssetTypeEnum {
 
   static AssetTypeEnum? fromJson(dynamic value) => AssetTypeEnumTypeTransformer().decode(value);
 
-  static List<AssetTypeEnum>? listFromJson(dynamic json, {bool growable = false,}) {
+  static List<AssetTypeEnum> listFromJson(dynamic json, {bool growable = false,}) {
     final result = <AssetTypeEnum>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -71,7 +71,7 @@ class AssetTypeEnumTypeTransformer {
   /// and users are still using an old app with the old code.
   AssetTypeEnum? decode(dynamic data, {bool allowNull = true}) {
     if (data != null) {
-      switch (data.toString()) {
+      switch (data) {
         case r'IMAGE': return AssetTypeEnum.IMAGE;
         case r'VIDEO': return AssetTypeEnum.VIDEO;
         case r'AUDIO': return AssetTypeEnum.AUDIO;
