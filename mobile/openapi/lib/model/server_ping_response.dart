@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -20,7 +20,7 @@ class ServerPingResponse {
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is ServerPingResponse &&
-     other.res == res;
+    other.res == res;
 
   @override
   int get hashCode =>
@@ -31,28 +31,18 @@ class ServerPingResponse {
   String toString() => 'ServerPingResponse[res=$res]';
 
   Map<String, dynamic> toJson() {
-    final _json = <String, dynamic>{};
-      _json[r'res'] = res;
-    return _json;
+    final json = <String, dynamic>{};
+      json[r'res'] = this.res;
+    return json;
   }
 
   /// Returns a new [ServerPingResponse] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
   static ServerPingResponse? fromJson(dynamic value) {
+    upgradeDto(value, "ServerPingResponse");
     if (value is Map) {
       final json = value.cast<String, dynamic>();
-
-      // Ensure that the map contains the required keys.
-      // Note 1: the values aren't checked for validity beyond being non-null.
-      // Note 2: this code is stripped in release mode!
-      assert(() {
-        requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "ServerPingResponse[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "ServerPingResponse[$key]" has a null value in JSON.');
-        });
-        return true;
-      }());
 
       return ServerPingResponse(
         res: mapValueOfType<String>(json, r'res')!,
@@ -61,7 +51,7 @@ class ServerPingResponse {
     return null;
   }
 
-  static List<ServerPingResponse>? listFromJson(dynamic json, {bool growable = false,}) {
+  static List<ServerPingResponse> listFromJson(dynamic json, {bool growable = false,}) {
     final result = <ServerPingResponse>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -92,12 +82,10 @@ class ServerPingResponse {
   static Map<String, List<ServerPingResponse>> mapListFromJson(dynamic json, {bool growable = false,}) {
     final map = <String, List<ServerPingResponse>>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        final value = ServerPingResponse.listFromJson(entry.value, growable: growable,);
-        if (value != null) {
-          map[entry.key] = value;
-        }
+        map[entry.key] = ServerPingResponse.listFromJson(entry.value, growable: growable,);
       }
     }
     return map;

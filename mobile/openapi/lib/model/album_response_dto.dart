@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -13,115 +13,208 @@ part of openapi.api;
 class AlbumResponseDto {
   /// Returns a new [AlbumResponseDto] instance.
   AlbumResponseDto({
-    required this.assetCount,
-    required this.id,
-    required this.ownerId,
     required this.albumName,
-    required this.createdAt,
     required this.albumThumbnailAssetId,
-    required this.shared,
-    this.sharedUsers = const [],
+    this.albumUsers = const [],
+    required this.assetCount,
     this.assets = const [],
+    required this.createdAt,
+    required this.description,
+    this.endDate,
+    required this.hasSharedLink,
+    required this.id,
+    required this.isActivityEnabled,
+    this.lastModifiedAssetTimestamp,
+    this.order,
+    required this.owner,
+    required this.ownerId,
+    required this.shared,
+    this.startDate,
+    required this.updatedAt,
   });
-
-  int assetCount;
-
-  String id;
-
-  String ownerId;
 
   String albumName;
 
-  String createdAt;
-
   String? albumThumbnailAssetId;
 
-  bool shared;
+  List<AlbumUserResponseDto> albumUsers;
 
-  List<UserResponseDto> sharedUsers;
+  int assetCount;
 
   List<AssetResponseDto> assets;
 
+  DateTime createdAt;
+
+  String description;
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  DateTime? endDate;
+
+  bool hasSharedLink;
+
+  String id;
+
+  bool isActivityEnabled;
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  DateTime? lastModifiedAssetTimestamp;
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  AssetOrder? order;
+
+  UserResponseDto owner;
+
+  String ownerId;
+
+  bool shared;
+
+  ///
+  /// Please note: This property should have been non-nullable! Since the specification file
+  /// does not include a default value (using the "default:" property), however, the generated
+  /// source code must fall back to having a nullable type.
+  /// Consider adding a "default:" property in the specification file to hide this note.
+  ///
+  DateTime? startDate;
+
+  DateTime updatedAt;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is AlbumResponseDto &&
-     other.assetCount == assetCount &&
-     other.id == id &&
-     other.ownerId == ownerId &&
-     other.albumName == albumName &&
-     other.createdAt == createdAt &&
-     other.albumThumbnailAssetId == albumThumbnailAssetId &&
-     other.shared == shared &&
-     other.sharedUsers == sharedUsers &&
-     other.assets == assets;
+    other.albumName == albumName &&
+    other.albumThumbnailAssetId == albumThumbnailAssetId &&
+    _deepEquality.equals(other.albumUsers, albumUsers) &&
+    other.assetCount == assetCount &&
+    _deepEquality.equals(other.assets, assets) &&
+    other.createdAt == createdAt &&
+    other.description == description &&
+    other.endDate == endDate &&
+    other.hasSharedLink == hasSharedLink &&
+    other.id == id &&
+    other.isActivityEnabled == isActivityEnabled &&
+    other.lastModifiedAssetTimestamp == lastModifiedAssetTimestamp &&
+    other.order == order &&
+    other.owner == owner &&
+    other.ownerId == ownerId &&
+    other.shared == shared &&
+    other.startDate == startDate &&
+    other.updatedAt == updatedAt;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (assetCount.hashCode) +
-    (id.hashCode) +
-    (ownerId.hashCode) +
     (albumName.hashCode) +
-    (createdAt.hashCode) +
     (albumThumbnailAssetId == null ? 0 : albumThumbnailAssetId!.hashCode) +
+    (albumUsers.hashCode) +
+    (assetCount.hashCode) +
+    (assets.hashCode) +
+    (createdAt.hashCode) +
+    (description.hashCode) +
+    (endDate == null ? 0 : endDate!.hashCode) +
+    (hasSharedLink.hashCode) +
+    (id.hashCode) +
+    (isActivityEnabled.hashCode) +
+    (lastModifiedAssetTimestamp == null ? 0 : lastModifiedAssetTimestamp!.hashCode) +
+    (order == null ? 0 : order!.hashCode) +
+    (owner.hashCode) +
+    (ownerId.hashCode) +
     (shared.hashCode) +
-    (sharedUsers.hashCode) +
-    (assets.hashCode);
+    (startDate == null ? 0 : startDate!.hashCode) +
+    (updatedAt.hashCode);
 
   @override
-  String toString() => 'AlbumResponseDto[assetCount=$assetCount, id=$id, ownerId=$ownerId, albumName=$albumName, createdAt=$createdAt, albumThumbnailAssetId=$albumThumbnailAssetId, shared=$shared, sharedUsers=$sharedUsers, assets=$assets]';
+  String toString() => 'AlbumResponseDto[albumName=$albumName, albumThumbnailAssetId=$albumThumbnailAssetId, albumUsers=$albumUsers, assetCount=$assetCount, assets=$assets, createdAt=$createdAt, description=$description, endDate=$endDate, hasSharedLink=$hasSharedLink, id=$id, isActivityEnabled=$isActivityEnabled, lastModifiedAssetTimestamp=$lastModifiedAssetTimestamp, order=$order, owner=$owner, ownerId=$ownerId, shared=$shared, startDate=$startDate, updatedAt=$updatedAt]';
 
   Map<String, dynamic> toJson() {
-    final _json = <String, dynamic>{};
-      _json[r'assetCount'] = assetCount;
-      _json[r'id'] = id;
-      _json[r'ownerId'] = ownerId;
-      _json[r'albumName'] = albumName;
-      _json[r'createdAt'] = createdAt;
-    if (albumThumbnailAssetId != null) {
-      _json[r'albumThumbnailAssetId'] = albumThumbnailAssetId;
+    final json = <String, dynamic>{};
+      json[r'albumName'] = this.albumName;
+    if (this.albumThumbnailAssetId != null) {
+      json[r'albumThumbnailAssetId'] = this.albumThumbnailAssetId;
     } else {
-      _json[r'albumThumbnailAssetId'] = null;
+    //  json[r'albumThumbnailAssetId'] = null;
     }
-      _json[r'shared'] = shared;
-      _json[r'sharedUsers'] = sharedUsers;
-      _json[r'assets'] = assets;
-    return _json;
+      json[r'albumUsers'] = this.albumUsers;
+      json[r'assetCount'] = this.assetCount;
+      json[r'assets'] = this.assets;
+      json[r'createdAt'] = this.createdAt.toUtc().toIso8601String();
+      json[r'description'] = this.description;
+    if (this.endDate != null) {
+      json[r'endDate'] = this.endDate!.toUtc().toIso8601String();
+    } else {
+    //  json[r'endDate'] = null;
+    }
+      json[r'hasSharedLink'] = this.hasSharedLink;
+      json[r'id'] = this.id;
+      json[r'isActivityEnabled'] = this.isActivityEnabled;
+    if (this.lastModifiedAssetTimestamp != null) {
+      json[r'lastModifiedAssetTimestamp'] = this.lastModifiedAssetTimestamp!.toUtc().toIso8601String();
+    } else {
+    //  json[r'lastModifiedAssetTimestamp'] = null;
+    }
+    if (this.order != null) {
+      json[r'order'] = this.order;
+    } else {
+    //  json[r'order'] = null;
+    }
+      json[r'owner'] = this.owner;
+      json[r'ownerId'] = this.ownerId;
+      json[r'shared'] = this.shared;
+    if (this.startDate != null) {
+      json[r'startDate'] = this.startDate!.toUtc().toIso8601String();
+    } else {
+    //  json[r'startDate'] = null;
+    }
+      json[r'updatedAt'] = this.updatedAt.toUtc().toIso8601String();
+    return json;
   }
 
   /// Returns a new [AlbumResponseDto] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
   static AlbumResponseDto? fromJson(dynamic value) {
+    upgradeDto(value, "AlbumResponseDto");
     if (value is Map) {
       final json = value.cast<String, dynamic>();
 
-      // Ensure that the map contains the required keys.
-      // Note 1: the values aren't checked for validity beyond being non-null.
-      // Note 2: this code is stripped in release mode!
-      assert(() {
-        requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "AlbumResponseDto[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "AlbumResponseDto[$key]" has a null value in JSON.');
-        });
-        return true;
-      }());
-
       return AlbumResponseDto(
-        assetCount: mapValueOfType<int>(json, r'assetCount')!,
-        id: mapValueOfType<String>(json, r'id')!,
-        ownerId: mapValueOfType<String>(json, r'ownerId')!,
         albumName: mapValueOfType<String>(json, r'albumName')!,
-        createdAt: mapValueOfType<String>(json, r'createdAt')!,
         albumThumbnailAssetId: mapValueOfType<String>(json, r'albumThumbnailAssetId'),
+        albumUsers: AlbumUserResponseDto.listFromJson(json[r'albumUsers']),
+        assetCount: mapValueOfType<int>(json, r'assetCount')!,
+        assets: AssetResponseDto.listFromJson(json[r'assets']),
+        createdAt: mapDateTime(json, r'createdAt', r'')!,
+        description: mapValueOfType<String>(json, r'description')!,
+        endDate: mapDateTime(json, r'endDate', r''),
+        hasSharedLink: mapValueOfType<bool>(json, r'hasSharedLink')!,
+        id: mapValueOfType<String>(json, r'id')!,
+        isActivityEnabled: mapValueOfType<bool>(json, r'isActivityEnabled')!,
+        lastModifiedAssetTimestamp: mapDateTime(json, r'lastModifiedAssetTimestamp', r''),
+        order: AssetOrder.fromJson(json[r'order']),
+        owner: UserResponseDto.fromJson(json[r'owner'])!,
+        ownerId: mapValueOfType<String>(json, r'ownerId')!,
         shared: mapValueOfType<bool>(json, r'shared')!,
-        sharedUsers: UserResponseDto.listFromJson(json[r'sharedUsers'])!,
-        assets: AssetResponseDto.listFromJson(json[r'assets'])!,
+        startDate: mapDateTime(json, r'startDate', r''),
+        updatedAt: mapDateTime(json, r'updatedAt', r'')!,
       );
     }
     return null;
   }
 
-  static List<AlbumResponseDto>? listFromJson(dynamic json, {bool growable = false,}) {
+  static List<AlbumResponseDto> listFromJson(dynamic json, {bool growable = false,}) {
     final result = <AlbumResponseDto>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -152,12 +245,10 @@ class AlbumResponseDto {
   static Map<String, List<AlbumResponseDto>> mapListFromJson(dynamic json, {bool growable = false,}) {
     final map = <String, List<AlbumResponseDto>>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        final value = AlbumResponseDto.listFromJson(entry.value, growable: growable,);
-        if (value != null) {
-          map[entry.key] = value;
-        }
+        map[entry.key] = AlbumResponseDto.listFromJson(entry.value, growable: growable,);
       }
     }
     return map;
@@ -165,15 +256,20 @@ class AlbumResponseDto {
 
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
-    'assetCount',
-    'id',
-    'ownerId',
     'albumName',
-    'createdAt',
     'albumThumbnailAssetId',
-    'shared',
-    'sharedUsers',
+    'albumUsers',
+    'assetCount',
     'assets',
+    'createdAt',
+    'description',
+    'hasSharedLink',
+    'id',
+    'isActivityEnabled',
+    'owner',
+    'ownerId',
+    'shared',
+    'updatedAt',
   };
 }
 

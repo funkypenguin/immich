@@ -1,7 +1,7 @@
 //
 // AUTO-GENERATED FILE, DO NOT MODIFY!
 //
-// @dart=2.12
+// @dart=2.18
 
 // ignore_for_file: unused_element, unused_import
 // ignore_for_file: always_put_required_named_parameters_first
@@ -13,62 +13,59 @@ part of openapi.api;
 class CreateProfileImageResponseDto {
   /// Returns a new [CreateProfileImageResponseDto] instance.
   CreateProfileImageResponseDto({
-    required this.userId,
+    required this.profileChangedAt,
     required this.profileImagePath,
+    required this.userId,
   });
 
-  String userId;
+  DateTime profileChangedAt;
 
   String profileImagePath;
 
+  String userId;
+
   @override
   bool operator ==(Object other) => identical(this, other) || other is CreateProfileImageResponseDto &&
-     other.userId == userId &&
-     other.profileImagePath == profileImagePath;
+    other.profileChangedAt == profileChangedAt &&
+    other.profileImagePath == profileImagePath &&
+    other.userId == userId;
 
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
-    (userId.hashCode) +
-    (profileImagePath.hashCode);
+    (profileChangedAt.hashCode) +
+    (profileImagePath.hashCode) +
+    (userId.hashCode);
 
   @override
-  String toString() => 'CreateProfileImageResponseDto[userId=$userId, profileImagePath=$profileImagePath]';
+  String toString() => 'CreateProfileImageResponseDto[profileChangedAt=$profileChangedAt, profileImagePath=$profileImagePath, userId=$userId]';
 
   Map<String, dynamic> toJson() {
-    final _json = <String, dynamic>{};
-      _json[r'userId'] = userId;
-      _json[r'profileImagePath'] = profileImagePath;
-    return _json;
+    final json = <String, dynamic>{};
+      json[r'profileChangedAt'] = this.profileChangedAt.toUtc().toIso8601String();
+      json[r'profileImagePath'] = this.profileImagePath;
+      json[r'userId'] = this.userId;
+    return json;
   }
 
   /// Returns a new [CreateProfileImageResponseDto] instance and imports its values from
   /// [value] if it's a [Map], null otherwise.
   // ignore: prefer_constructors_over_static_methods
   static CreateProfileImageResponseDto? fromJson(dynamic value) {
+    upgradeDto(value, "CreateProfileImageResponseDto");
     if (value is Map) {
       final json = value.cast<String, dynamic>();
 
-      // Ensure that the map contains the required keys.
-      // Note 1: the values aren't checked for validity beyond being non-null.
-      // Note 2: this code is stripped in release mode!
-      assert(() {
-        requiredKeys.forEach((key) {
-          assert(json.containsKey(key), 'Required key "CreateProfileImageResponseDto[$key]" is missing from JSON.');
-          assert(json[key] != null, 'Required key "CreateProfileImageResponseDto[$key]" has a null value in JSON.');
-        });
-        return true;
-      }());
-
       return CreateProfileImageResponseDto(
-        userId: mapValueOfType<String>(json, r'userId')!,
+        profileChangedAt: mapDateTime(json, r'profileChangedAt', r'')!,
         profileImagePath: mapValueOfType<String>(json, r'profileImagePath')!,
+        userId: mapValueOfType<String>(json, r'userId')!,
       );
     }
     return null;
   }
 
-  static List<CreateProfileImageResponseDto>? listFromJson(dynamic json, {bool growable = false,}) {
+  static List<CreateProfileImageResponseDto> listFromJson(dynamic json, {bool growable = false,}) {
     final result = <CreateProfileImageResponseDto>[];
     if (json is List && json.isNotEmpty) {
       for (final row in json) {
@@ -99,12 +96,10 @@ class CreateProfileImageResponseDto {
   static Map<String, List<CreateProfileImageResponseDto>> mapListFromJson(dynamic json, {bool growable = false,}) {
     final map = <String, List<CreateProfileImageResponseDto>>{};
     if (json is Map && json.isNotEmpty) {
-      json = json.cast<String, dynamic>(); // ignore: parameter_assignments
+      // ignore: parameter_assignments
+      json = json.cast<String, dynamic>();
       for (final entry in json.entries) {
-        final value = CreateProfileImageResponseDto.listFromJson(entry.value, growable: growable,);
-        if (value != null) {
-          map[entry.key] = value;
-        }
+        map[entry.key] = CreateProfileImageResponseDto.listFromJson(entry.value, growable: growable,);
       }
     }
     return map;
@@ -112,8 +107,9 @@ class CreateProfileImageResponseDto {
 
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
-    'userId',
+    'profileChangedAt',
     'profileImagePath',
+    'userId',
   };
 }
 

@@ -11,6 +11,8 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+www/
+
 # OS
 .DS_Store
 
@@ -39,3 +41,6 @@ dist/
 upload/
 tmp/
 core
+.reverse-geocoding-dump/
+
+**/node_modules/**

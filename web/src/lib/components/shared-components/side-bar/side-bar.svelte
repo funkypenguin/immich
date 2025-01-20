@@ -1,59 +1,141 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+  import { featureFlags } from '$lib/stores/server-config.store';
+  import {
+    mdiAccount,
+    mdiAccountOutline,
+    mdiAccountMultiple,
+    mdiAccountMultipleOutline,
+    mdiArchiveArrowDown,
+    mdiArchiveArrowDownOutline,
+    mdiHeart,
+    mdiHeartOutline,
+    mdiImageAlbum,
+    mdiImageMultiple,
+    mdiImageMultipleOutline,
+    mdiMagnify,
+    mdiMap,
+    mdiMapOutline,
+    mdiTrashCan,
+    mdiTrashCanOutline,
+    mdiToolbox,
+    mdiToolboxOutline,
+    mdiFolderOutline,
+    mdiTagMultipleOutline,
+  } from '@mdi/js';
+  import SideBarSection from './side-bar-section.svelte';
+  import SideBarLink from './side-bar-link.svelte';
+  import { t } from 'svelte-i18n';
+  import BottomInfo from '$lib/components/shared-components/side-bar/bottom-info.svelte';
+  import { preferences } from '$lib/stores/user.store';
+  import { recentAlbumsDropdown } from '$lib/stores/preferences.store';
+  import RecentAlbums from '$lib/components/shared-components/side-bar/recent-albums.svelte';
+  import { fly } from 'svelte/transition';
 
-	import { AppSideBarSelection } from '$lib/models/admin-sidebar-selection';
-	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-	import ImageAlbum from 'svelte-material-icons/ImageAlbum.svelte';
-	import ImageOutline from 'svelte-material-icons/ImageOutline.svelte';
-	import AccountMultipleOutline from 'svelte-material-icons/AccountMultipleOutline.svelte';
-	import SideBarButton from './side-bar-button.svelte';
-	import StatusBox from '../status-box.svelte';
-
-	let selectedAction: AppSideBarSelection;
-
-	onMount(async () => {
-		if ($page.routeId == 'albums') {
-			selectedAction = AppSideBarSelection.ALBUMS;
-		} else if ($page.routeId == 'photos') {
-			selectedAction = AppSideBarSelection.PHOTOS;
-		} else if ($page.routeId == 'sharing') {
-			selectedAction = AppSideBarSelection.SHARING;
-		}
-	});
+  let isArchiveSelected: boolean = $state(false);
+  let isFavoritesSelected: boolean = $state(false);
+  let isMapSelected: boolean = $state(false);
+  let isPeopleSelected: boolean = $state(false);
+  let isPhotosSelected: boolean = $state(false);
+  let isSharingSelected: boolean = $state(false);
+  let isTrashSelected: boolean = $state(false);
+  let isUtilitiesSelected: boolean = $state(false);
 </script>
 
-<section id="sidebar" class="flex flex-col gap-1 pt-8 pr-6">
-	<a sveltekit:prefetch href={$page.routeId != 'photos' ? `/photos` : null}>
-		<SideBarButton
-			title="Photos"
-			logo={ImageOutline}
-			actionType={AppSideBarSelection.PHOTOS}
-			isSelected={selectedAction === AppSideBarSelection.PHOTOS}
-		/></a
-	>
-	<a sveltekit:prefetch href={$page.routeId != 'sharing' ? `/sharing` : null}>
-		<SideBarButton
-			title="Sharing"
-			logo={AccountMultipleOutline}
-			actionType={AppSideBarSelection.SHARING}
-			isSelected={selectedAction === AppSideBarSelection.SHARING}
-		/></a
-	>
-	<div class="text-xs ml-5 my-4">
-		<p>LIBRARY</p>
-	</div>
-	<a sveltekit:prefetch href={$page.routeId != 'albums' ? `/albums` : null}>
-		<SideBarButton
-			title="Albums"
-			logo={ImageAlbum}
-			actionType={AppSideBarSelection.ALBUMS}
-			isSelected={selectedAction === AppSideBarSelection.ALBUMS}
-		/>
-	</a>
-	<!-- Status Box -->
+<SideBarSection>
+  <nav aria-label={$t('primary')}>
+    <SideBarLink
+      title={$t('photos')}
+      routeId="/(user)/photos"
+      bind:isSelected={isPhotosSelected}
+      icon={isPhotosSelected ? mdiImageMultiple : mdiImageMultipleOutline}
+    ></SideBarLink>
 
-	<div class="mb-6 mt-auto">
-		<StatusBox />
-	</div>
-</section>
+    {#if $featureFlags.search}
+      <SideBarLink title={$t('explore')} routeId="/(user)/explore" icon={mdiMagnify} />
+    {/if}
+
+    {#if $featureFlags.map}
+      <SideBarLink
+        title={$t('map')}
+        routeId="/(user)/map"
+        bind:isSelected={isMapSelected}
+        icon={isMapSelected ? mdiMap : mdiMapOutline}
+      />
+    {/if}
+
+    {#if $preferences.people.enabled && $preferences.people.sidebarWeb}
+      <SideBarLink
+        title={$t('people')}
+        routeId="/(user)/people"
+        bind:isSelected={isPeopleSelected}
+        icon={isPeopleSelected ? mdiAccount : mdiAccountOutline}
+      />
+    {/if}
+
+    <SideBarLink
+      title={$t('sharing')}
+      routeId="/(user)/sharing"
+      icon={isSharingSelected ? mdiAccountMultiple : mdiAccountMultipleOutline}
+      bind:isSelected={isSharingSelected}
+    ></SideBarLink>
+
+    <div class="text-xs transition-all duration-200 dark:text-immich-dark-fg">
+      <p class="hidden p-6 group-hover:sm:block md:block">{$t('library').toUpperCase()}</p>
+      <hr class="mx-4 mb-[31px] mt-8 block group-hover:sm:hidden md:hidden" />
+    </div>
+
+    <SideBarLink
+      title={$t('favorites')}
+      routeId="/(user)/favorites"
+      icon={isFavoritesSelected ? mdiHeart : mdiHeartOutline}
+      bind:isSelected={isFavoritesSelected}
+    ></SideBarLink>
+
+    <SideBarLink
+      title={$t('albums')}
+      routeId="/(user)/albums"
+      icon={mdiImageAlbum}
+      flippedLogo
+      bind:dropdownOpen={$recentAlbumsDropdown}
+    >
+      {#snippet dropDownContent()}
+        <span in:fly={{ y: -20 }} class="hidden md:block">
+          <RecentAlbums />
+        </span>
+      {/snippet}
+    </SideBarLink>
+
+    {#if $preferences.tags.enabled && $preferences.tags.sidebarWeb}
+      <SideBarLink title={$t('tags')} routeId="/(user)/tags" icon={mdiTagMultipleOutline} flippedLogo />
+    {/if}
+
+    {#if $preferences.folders.enabled && $preferences.folders.sidebarWeb}
+      <SideBarLink title={$t('folders')} routeId="/(user)/folders" icon={mdiFolderOutline} flippedLogo />
+    {/if}
+
+    <SideBarLink
+      title={$t('utilities')}
+      routeId="/(user)/utilities"
+      bind:isSelected={isUtilitiesSelected}
+      icon={isUtilitiesSelected ? mdiToolbox : mdiToolboxOutline}
+    ></SideBarLink>
+
+    <SideBarLink
+      title={$t('archive')}
+      routeId="/(user)/archive"
+      bind:isSelected={isArchiveSelected}
+      icon={isArchiveSelected ? mdiArchiveArrowDown : mdiArchiveArrowDownOutline}
+    ></SideBarLink>
+
+    {#if $featureFlags.trash}
+      <SideBarLink
+        title={$t('trash')}
+        routeId="/(user)/trash"
+        bind:isSelected={isTrashSelected}
+        icon={isTrashSelected ? mdiTrashCan : mdiTrashCanOutline}
+      ></SideBarLink>
+    {/if}
+  </nav>
+
+  <BottomInfo />
+</SideBarSection>

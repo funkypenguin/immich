@@ -1,121 +1,158 @@
 <script lang="ts">
-	import { api, UserResponseDto } from '@api';
-	import { createEventDispatcher } from 'svelte';
-	import AccountEditOutline from 'svelte-material-icons/AccountEditOutline.svelte';
+  import FullScreenModal from '$lib/components/shared-components/full-screen-modal.svelte';
+  import { AppRoute } from '$lib/constants';
+  import { userInteraction } from '$lib/stores/user.svelte';
+  import { handleError } from '$lib/utils/handle-error';
+  import { updateUserAdmin, type UserAdminResponseDto } from '@immich/sdk';
+  import { mdiAccountEditOutline } from '@mdi/js';
+  import Button from '../elements/buttons/button.svelte';
+  import { dialogController } from '$lib/components/shared-components/dialog/dialog';
+  import { t } from 'svelte-i18n';
+  import { ByteUnit, convertFromBytes, convertToBytes } from '$lib/utils/byte-units';
 
-	export let user: UserResponseDto;
+  interface Props {
+    user: UserAdminResponseDto;
+    canResetPassword?: boolean;
+    newPassword: string;
+    onClose: () => void;
+    onResetPasswordSuccess: () => void;
+    onEditSuccess: () => void;
+  }
 
-	let error: string;
-	let success: string;
+  let {
+    user,
+    canResetPassword = true,
+    newPassword = $bindable(),
+    onClose,
+    onResetPasswordSuccess,
+    onEditSuccess,
+  }: Props = $props();
 
-	const dispatch = createEventDispatcher();
+  let quotaSize = $state(user.quotaSizeInBytes ? convertFromBytes(user.quotaSizeInBytes, ByteUnit.GiB) : null);
 
-	// eslint-disable-next-line no-undef
-	const editUser = async (event: SubmitEvent) => {
-		try {
-			const formElement = event.target as HTMLFormElement;
-			const form = new FormData(formElement);
+  const previousQutoa = user.quotaSizeInBytes;
 
-			const firstName = form.get('firstName');
-			const lastName = form.get('lastName');
+  let quotaSizeWarning = $derived(
+    previousQutoa !== convertToBytes(Number(quotaSize), ByteUnit.GiB) &&
+      !!quotaSize &&
+      userInteraction.serverInfo &&
+      convertToBytes(Number(quotaSize), ByteUnit.GiB) > userInteraction.serverInfo.diskSizeRaw,
+  );
 
-			const { status } = await api.userApi.updateUser({
-				id: user.id,
-				firstName: firstName!.toString(),
-				lastName: lastName!.toString()
-			});
+  const editUser = async () => {
+    try {
+      const { id, email, name, storageLabel } = user;
+      await updateUserAdmin({
+        id,
+        userAdminUpdateDto: {
+          email,
+          name,
+          storageLabel: storageLabel || '',
+          quotaSizeInBytes: quotaSize ? convertToBytes(Number(quotaSize), ByteUnit.GiB) : null,
+        },
+      });
 
-			if (status == 200) {
-				dispatch('edit-success');
-			}
-		} catch (e) {
-			console.log('Error updating user ', e);
-		}
-	};
+      onEditSuccess();
+    } catch (error) {
+      handleError(error, $t('errors.unable_to_update_user'));
+    }
+  };
 
-	const resetPassword = async () => {
-		try {
-			if (window.confirm('Do you want to reset the user password?')) {
-				const defaultPassword = 'password';
+  const resetPassword = async () => {
+    const isConfirmed = await dialogController.show({
+      prompt: $t('admin.confirm_user_password_reset', { values: { user: user.name } }),
+    });
 
-				const { status } = await api.userApi.updateUser({
-					id: user.id,
-					password: defaultPassword,
-					shouldChangePassword: true
-				});
+    if (!isConfirmed) {
+      return;
+    }
 
-				if (status == 200) {
-					dispatch('reset-password-success');
-				}
-			}
-		} catch (e) {
-			console.log('Error reseting user password', e);
-		}
-	};
+    try {
+      newPassword = generatePassword();
+
+      await updateUserAdmin({
+        id: user.id,
+        userAdminUpdateDto: {
+          password: newPassword,
+          shouldChangePassword: true,
+        },
+      });
+
+      onResetPasswordSuccess();
+    } catch (error) {
+      handleError(error, $t('errors.unable_to_reset_password'));
+    }
+  };
+
+  // TODO move password reset server-side
+  function generatePassword(length: number = 16) {
+    let generatedPassword = '';
+
+    const characterSet = '0123456789' + 'abcdefghijklmnopqrstuvwxyz' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + ',.-{}+!#$%/()=?';
+
+    for (let i = 0; i < length; i++) {
+      let randomNumber = crypto.getRandomValues(new Uint32Array(1))[0];
+      randomNumber = randomNumber / 2 ** 32;
+      randomNumber = Math.floor(randomNumber * characterSet.length);
+
+      generatedPassword += characterSet[randomNumber];
+    }
+
+    return generatedPassword;
+  }
+
+  const onSubmit = async (event: Event) => {
+    event.preventDefault();
+    await editUser();
+  };
 </script>
 
-<div class="border bg-white p-4 shadow-sm w-[500px] rounded-3xl py-8">
-	<div class="flex flex-col place-items-center place-content-center gap-4 px-4">
-		<!--        <img class="text-center" src="/immich-logo.svg" height="100" width="100" alt="immich-logo"/>-->
-		<AccountEditOutline size="4em" color="#4250affe" />
-		<h1 class="text-2xl text-immich-primary font-medium">Edit user</h1>
-	</div>
+<FullScreenModal title={$t('edit_user')} icon={mdiAccountEditOutline} {onClose}>
+  <form onsubmit={onSubmit} autocomplete="off" id="edit-user-form">
+    <div class="my-4 flex flex-col gap-2">
+      <label class="immich-form-label" for="email">{$t('email')}</label>
+      <input class="immich-form-input" id="email" name="email" type="email" bind:value={user.email} />
+    </div>
 
-	<form on:submit|preventDefault={editUser} autocomplete="off">
-		<div class="m-4 flex flex-col gap-2">
-			<label class="immich-form-label" for="email">Email (cannot change)</label>
-			<input
-				class="immich-form-input disabled:bg-gray-200 hover:cursor-not-allowed"
-				id="email"
-				name="email"
-				type="email"
-				disabled
-				bind:value={user.email}
-			/>
-		</div>
+    <div class="my-4 flex flex-col gap-2">
+      <label class="immich-form-label" for="name">{$t('name')}</label>
+      <input class="immich-form-input" id="name" name="name" type="text" required bind:value={user.name} />
+    </div>
 
-		<div class="m-4 flex flex-col gap-2">
-			<label class="immich-form-label" for="firstName">First Name</label>
-			<input
-				class="immich-form-input"
-				id="firstName"
-				name="firstName"
-				type="text"
-				required
-				bind:value={user.firstName}
-			/>
-		</div>
+    <div class="my-4 flex flex-col gap-2">
+      <label class="flex items-center gap-2 immich-form-label" for="quotaSize">
+        {$t('admin.quota_size_gib')}
+        {#if quotaSizeWarning}
+          <p class="text-red-400 text-sm">{$t('errors.quota_higher_than_disk_size')}</p>
+        {/if}</label
+      >
+      <input class="immich-form-input" id="quotaSize" name="quotaSize" type="number" min="0" bind:value={quotaSize} />
+      <p>{$t('admin.note_unlimited_quota')}</p>
+    </div>
 
-		<div class="m-4 flex flex-col gap-2">
-			<label class="immich-form-label" for="lastName">Last Name</label>
-			<input
-				class="immich-form-input"
-				id="lastName"
-				name="lastName"
-				type="text"
-				required
-				bind:value={user.lastName}
-			/>
-		</div>
+    <div class="my-4 flex flex-col gap-2">
+      <label class="immich-form-label" for="storage-label">{$t('storage_label')}</label>
+      <input
+        class="immich-form-input"
+        id="storage-label"
+        name="storage-label"
+        type="text"
+        bind:value={user.storageLabel}
+      />
 
-		{#if error}
-			<p class="text-red-400 ml-4 text-sm">{error}</p>
-		{/if}
+      <p>
+        {$t('admin.note_apply_storage_label_previous_assets')}
+        <a href={AppRoute.ADMIN_JOBS} class="text-immich-primary dark:text-immich-dark-primary">
+          {$t('admin.storage_template_migration_job')}
+        </a>
+      </p>
+    </div>
+  </form>
 
-		{#if success}
-			<p class="text-immich-primary ml-4 text-sm">{success}</p>
-		{/if}
-		<div class="flex w-full px-4 gap-4 mt-8">
-			<button
-				on:click={resetPassword}
-				class="flex-1 transition-colors bg-[#F9DEDC] hover:bg-red-50 text-[#410E0B] px-6 py-3 rounded-full w-full font-medium"
-				>Reset password
-			</button>
-			<button
-				type="submit"
-				class="flex-1 transition-colors bg-immich-primary hover:bg-immich-primary/75 px-6 py-3 text-white rounded-full shadow-md w-full font-medium"
-				>Confirm
-			</button>
-		</div>
-	</form>
-</div>
+  {#snippet stickyBottom()}
+    {#if canResetPassword}
+      <Button color="light-red" fullwidth onclick={resetPassword}>{$t('reset_password')}</Button>
+    {/if}
+    <Button type="submit" fullwidth form="edit-user-form">{$t('confirm')}</Button>
+  {/snippet}
+</FullScreenModal>

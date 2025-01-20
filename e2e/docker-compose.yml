@@ -1,0 +1,47 @@
+name: immich-e2e
+
+services:
+  immich-server:
+    container_name: immich-e2e-server
+    command: ['./start.sh']
+    image: immich-server:latest
+    build:
+      context: ../
+      dockerfile: server/Dockerfile
+      args:
+        - BUILD_ID=1234567890
+        - BUILD_IMAGE=e2e
+        - BUILD_SOURCE_REF=e2e
+        - BUILD_SOURCE_COMMIT=e2eeeeeeeeeeeeeeeeee
+    environment:
+      - DB_HOSTNAME=database
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE_NAME=immich
+      - IMMICH_MACHINE_LEARNING_ENABLED=false
+      - IMMICH_TELEMETRY_INCLUDE=all
+      - IMMICH_ENV=testing
+      - IMMICH_PORT=2285
+      - IMMICH_IGNORE_MOUNT_CHECK_ERRORS=true
+    volumes:
+      - ./test-assets:/test-assets
+    extra_hosts:
+      - 'auth-server:host-gateway'
+    depends_on:
+      - redis
+      - database
+    ports:
+      - 2285:2285
+
+  redis:
+    image: redis:6.2-alpine@sha256:905c4ee67b8e0aa955331960d2aa745781e6bd89afc44a8584bfd13bc890f0ae
+
+  database:
+    image: tensorchord/pgvecto-rs:pg14-v0.2.0@sha256:90724186f0a3517cf6914295b5ab410db9ce23190a2d9d0b9dd6463e3fa298f0
+    command: -c fsync=off -c shared_preload_libraries=vectors.so
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: immich
+    ports:
+      - 5435:5432
