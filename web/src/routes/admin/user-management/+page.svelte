@@ -74,6 +74,10 @@
         await refresh();
         break;
       }
+      case 'resetPinCode': {
+        notificationController.show({ type: NotificationType.Info, message: $t('pin_code_reset_successfully') });
+        break;
+      }
     }
   };
 
@@ -137,7 +141,7 @@
                   {#if !immichUser.deletedAt}
                     <IconButton
                       shape="round"
-                      size="small"
+                      size="medium"
                       icon={mdiPencilOutline}
                       title={$t('edit_user')}
                       onclick={() => handleEdit(immichUser)}
@@ -146,7 +150,7 @@
                     {#if immichUser.id !== $user.id}
                       <IconButton
                         shape="round"
-                        size="small"
+                        size="medium"
                         icon={mdiTrashCanOutline}
                         title={$t('delete_user')}
                         onclick={() => handleDelete(immichUser)}
@@ -157,7 +161,7 @@
                   {#if immichUser.deletedAt && immichUser.status === UserStatus.Deleted}
                     <IconButton
                       shape="round"
-                      size="small"
+                      size="medium"
                       icon={mdiDeleteRestore}
                       title={$t('admin.user_restore_scheduled_removal', {
                         values: { date: getDeleteDate(immichUser.deletedAt) },
