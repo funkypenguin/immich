@@ -8,6 +8,7 @@
   import AddToAlbum from '$lib/components/photos-page/actions/add-to-album.svelte';
   import ArchiveAction from '$lib/components/photos-page/actions/archive-action.svelte';
   import ChangeDate from '$lib/components/photos-page/actions/change-date-action.svelte';
+  import ChangeDescription from '$lib/components/photos-page/actions/change-description-action.svelte';
   import ChangeLocation from '$lib/components/photos-page/actions/change-location-action.svelte';
   import CreateSharedLink from '$lib/components/photos-page/actions/create-shared-link.svelte';
   import DeleteAssets from '$lib/components/photos-page/actions/delete-assets.svelte';
@@ -123,7 +124,7 @@
           await progressBarController.set(1);
         } catch (error) {
           // this may happen if browser blocks auto-play of the video on first page load. This can either be a setting
-          // or just defaut in certain browsers on page load without any DOM interaction by user.
+          // or just default in certain browsers on page load without any DOM interaction by user.
           console.error(`handleAction[${callingContext}] videoPlayer play problem: ${error}`);
           paused = true;
           await progressBarController.set(0);
@@ -305,7 +306,7 @@
 />
 
 {#if assetInteraction.selectionActive}
-  <div class="sticky top-0 z-[90]">
+  <div class="sticky top-0">
     <AssetSelectControlBar
       assets={assetInteraction.selectedAssets}
       clearSelect={() => cancelMultiselect(assetInteraction)}
@@ -323,6 +324,7 @@
       <ButtonContextMenu icon={mdiDotsVertical} title={$t('menu')}>
         <DownloadAction menuItem />
         <ChangeDate menuItem />
+        <ChangeDescription menuItem />
         <ChangeLocation menuItem />
         <ArchiveAction menuItem unarchive={assetInteraction.isAllArchived} onArchive={handleDeleteOrArchiveAssets} />
         {#if $preferences.tags.enabled && assetInteraction.isAllUserOwned}
@@ -380,7 +382,7 @@
 
     {#if galleryInView}
       <div
-        class="fixed top-20 z-30 start-1/2 -translate-x-1/2 transition-opacity"
+        class="fixed top-20 start-1/2 -translate-x-1/2 transition-opacity"
         class:opacity-0={!galleryInView}
         class:opacity-100={galleryInView}
       >

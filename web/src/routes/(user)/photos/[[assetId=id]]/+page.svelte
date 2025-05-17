@@ -5,6 +5,7 @@
   import ArchiveAction from '$lib/components/photos-page/actions/archive-action.svelte';
   import AssetJobActions from '$lib/components/photos-page/actions/asset-job-actions.svelte';
   import ChangeDate from '$lib/components/photos-page/actions/change-date-action.svelte';
+  import ChangeDescription from '$lib/components/photos-page/actions/change-description-action.svelte';
   import ChangeLocation from '$lib/components/photos-page/actions/change-location-action.svelte';
   import CreateSharedLink from '$lib/components/photos-page/actions/create-shared-link.svelte';
   import DeleteAssets from '$lib/components/photos-page/actions/delete-assets.svelte';
@@ -12,6 +13,7 @@
   import FavoriteAction from '$lib/components/photos-page/actions/favorite-action.svelte';
   import LinkLivePhotoAction from '$lib/components/photos-page/actions/link-live-photo-action.svelte';
   import SelectAllAssets from '$lib/components/photos-page/actions/select-all-assets.svelte';
+  import SetVisibilityAction from '$lib/components/photos-page/actions/set-visibility-action.svelte';
   import StackAction from '$lib/components/photos-page/actions/stack-action.svelte';
   import TagAction from '$lib/components/photos-page/actions/tag-action.svelte';
   import AssetGrid from '$lib/components/photos-page/asset-grid.svelte';
@@ -75,10 +77,33 @@
     assetStore.updateAssets([still]);
   };
 
+  const handleSetVisibility = (assetIds: string[]) => {
+    assetStore.removeAssets(assetIds);
+    assetInteraction.clearMultiselect();
+  };
+
   beforeNavigate(() => {
     isFaceEditMode.value = false;
   });
 </script>
+
+<UserPageLayout hideNavbar={assetInteraction.selectionActive} showUploadButton scrollbar={false}>
+  <AssetGrid
+    enableRouting={true}
+    {assetStore}
+    {assetInteraction}
+    removeAction={AssetAction.ARCHIVE}
+    onEscape={handleEscape}
+    withStacked
+  >
+    {#if $preferences.memories.enabled}
+      <MemoryLane />
+    {/if}
+    {#snippet empty()}
+      <EmptyPlaceholder text={$t('no_assets_message')} onClick={() => openFileUploadDialog()} />
+    {/snippet}
+  </AssetGrid>
+</UserPageLayout>
 
 {#if assetInteraction.selectionActive}
   <AssetSelectControlBar
@@ -118,32 +143,16 @@
         />
       {/if}
       <ChangeDate menuItem />
+      <ChangeDescription menuItem />
       <ChangeLocation menuItem />
       <ArchiveAction menuItem onArchive={(assetIds) => assetStore.removeAssets(assetIds)} />
       {#if $preferences.tags.enabled}
         <TagAction menuItem />
       {/if}
       <DeleteAssets menuItem onAssetDelete={(assetIds) => assetStore.removeAssets(assetIds)} />
+      <SetVisibilityAction menuItem onVisibilitySet={handleSetVisibility} />
       <hr />
       <AssetJobActions />
     </ButtonContextMenu>
   </AssetSelectControlBar>
 {/if}
-
-<UserPageLayout hideNavbar={assetInteraction.selectionActive} showUploadButton scrollbar={false}>
-  <AssetGrid
-    enableRouting={true}
-    {assetStore}
-    {assetInteraction}
-    removeAction={AssetAction.ARCHIVE}
-    onEscape={handleEscape}
-    withStacked
-  >
-    {#if $preferences.memories.enabled}
-      <MemoryLane />
-    {/if}
-    {#snippet empty()}
-      <EmptyPlaceholder text={$t('no_assets_message')} onClick={() => openFileUploadDialog()} />
-    {/snippet}
-  </AssetGrid>
-</UserPageLayout>
