@@ -26,7 +26,8 @@
   let oauthLoading = $state(true);
 
   const onSuccess = async (user: LoginResponseDto) => {
-    await goto(AppRoute.PHOTOS, { invalidateAll: true });
+    console.log(data.continueUrl);
+    await goto(data.continueUrl, { invalidateAll: true });
     eventManager.emit('auth.login', user);
   };
 
@@ -52,7 +53,10 @@
     }
 
     try {
-      if ($featureFlags.oauthAutoLaunch && !oauth.isAutoLaunchDisabled(globalThis.location)) {
+      if (
+        ($featureFlags.oauthAutoLaunch && !oauth.isAutoLaunchDisabled(globalThis.location)) ||
+        oauth.isAutoLaunchEnabled(globalThis.location)
+      ) {
         await goto(`${AppRoute.AUTH_LOGIN}?autoLaunch=0`, { replaceState: true });
         await oauth.authorize(globalThis.location);
         return;

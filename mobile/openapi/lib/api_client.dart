@@ -272,6 +272,8 @@ class ApiClient {
           return AssetVisibilityTypeTransformer().decode(value);
         case 'AudioCodec':
           return AudioCodecTypeTransformer().decode(value);
+        case 'AuthStatusResponseDto':
+          return AuthStatusResponseDto.fromJson(value);
         case 'AvatarUpdate':
           return AvatarUpdate.fromJson(value);
         case 'BulkIdResponseDto':
@@ -282,6 +284,10 @@ class ApiClient {
           return CLIPConfig.fromJson(value);
         case 'CQMode':
           return CQModeTypeTransformer().decode(value);
+        case 'CastResponse':
+          return CastResponse.fromJson(value);
+        case 'CastUpdate':
+          return CastUpdate.fromJson(value);
         case 'ChangePasswordDto':
           return ChangePasswordDto.fromJson(value);
         case 'CheckExistingAssetsDto':
@@ -430,6 +436,12 @@ class ApiClient {
           return PersonUpdateDto.fromJson(value);
         case 'PersonWithFacesResponseDto':
           return PersonWithFacesResponseDto.fromJson(value);
+        case 'PinCodeChangeDto':
+          return PinCodeChangeDto.fromJson(value);
+        case 'PinCodeResetDto':
+          return PinCodeResetDto.fromJson(value);
+        case 'PinCodeSetupDto':
+          return PinCodeSetupDto.fromJson(value);
         case 'PlacesResponseDto':
           return PlacesResponseDto.fromJson(value);
         case 'PurchaseResponse':
@@ -468,6 +480,8 @@ class ApiClient {
           return SearchSuggestionTypeTypeTransformer().decode(value);
         case 'ServerAboutResponseDto':
           return ServerAboutResponseDto.fromJson(value);
+        case 'ServerApkLinksDto':
+          return ServerApkLinksDto.fromJson(value);
         case 'ServerConfigDto':
           return ServerConfigDto.fromJson(value);
         case 'ServerFeaturesDto':
@@ -486,8 +500,14 @@ class ApiClient {
           return ServerVersionHistoryResponseDto.fromJson(value);
         case 'ServerVersionResponseDto':
           return ServerVersionResponseDto.fromJson(value);
+        case 'SessionCreateDto':
+          return SessionCreateDto.fromJson(value);
+        case 'SessionCreateResponseDto':
+          return SessionCreateResponseDto.fromJson(value);
         case 'SessionResponseDto':
           return SessionResponseDto.fromJson(value);
+        case 'SessionUnlockDto':
+          return SessionUnlockDto.fromJson(value);
         case 'SharedLinkCreateDto':
           return SharedLinkCreateDto.fromJson(value);
         case 'SharedLinkEditDto':
@@ -518,6 +538,14 @@ class ApiClient {
           return SyncAckDto.fromJson(value);
         case 'SyncAckSetDto':
           return SyncAckSetDto.fromJson(value);
+        case 'SyncAlbumDeleteV1':
+          return SyncAlbumDeleteV1.fromJson(value);
+        case 'SyncAlbumUserDeleteV1':
+          return SyncAlbumUserDeleteV1.fromJson(value);
+        case 'SyncAlbumUserV1':
+          return SyncAlbumUserV1.fromJson(value);
+        case 'SyncAlbumV1':
+          return SyncAlbumV1.fromJson(value);
         case 'SyncAssetDeleteV1':
           return SyncAssetDeleteV1.fromJson(value);
         case 'SyncAssetExifV1':
@@ -620,10 +648,10 @@ class ApiClient {
           return TemplateResponseDto.fromJson(value);
         case 'TestEmailResponseDto':
           return TestEmailResponseDto.fromJson(value);
-        case 'TimeBucketResponseDto':
-          return TimeBucketResponseDto.fromJson(value);
-        case 'TimeBucketSize':
-          return TimeBucketSizeTypeTransformer().decode(value);
+        case 'TimeBucketAssetResponseDto':
+          return TimeBucketAssetResponseDto.fromJson(value);
+        case 'TimeBucketsResponseDto':
+          return TimeBucketsResponseDto.fromJson(value);
         case 'ToneMapping':
           return ToneMappingTypeTransformer().decode(value);
         case 'TranscodeHWAccel':
@@ -674,6 +702,8 @@ class ApiClient {
           return ValidateLibraryImportPathResponseDto.fromJson(value);
         case 'ValidateLibraryResponseDto':
           return ValidateLibraryResponseDto.fromJson(value);
+        case 'VersionCheckStateResponseDto':
+          return VersionCheckStateResponseDto.fromJson(value);
         case 'VideoCodec':
           return VideoCodecTypeTransformer().decode(value);
         case 'VideoContainer':
