@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { dialogController } from '$lib/components/shared-components/dialog/dialog';
   import SettingSwitch from '$lib/components/shared-components/settings/setting-switch.svelte';
   import UserAvatar from '$lib/components/shared-components/user-avatar.svelte';
   import { modalManager } from '$lib/managers/modal-manager.svelte';
@@ -13,12 +12,11 @@
     type PartnerResponseDto,
     type UserResponseDto,
   } from '@immich/sdk';
-  import { Button } from '@immich/ui';
+  import { Button, IconButton } from '@immich/ui';
   import { mdiCheck, mdiClose } from '@mdi/js';
   import { onMount } from 'svelte';
   import { t } from 'svelte-i18n';
   import { handleError } from '../../utils/handle-error';
-  import CircleIconButton from '../elements/buttons/circle-icon-button.svelte';
   import Icon from '../elements/icon.svelte';
 
   interface PartnerSharing {
@@ -81,7 +79,7 @@
   };
 
   const handleRemovePartner = async (partner: PartnerResponseDto) => {
-    const isConfirmed = await dialogController.show({
+    const isConfirmed = await modalManager.showDialog({
       title: $t('stop_photo_sharing'),
       prompt: $t('stop_photo_sharing_description', { values: { partner: partner.name } }),
     });
@@ -145,11 +143,14 @@
           </div>
 
           {#if partner.sharedByMe}
-            <CircleIconButton
+            <IconButton
+              shape="round"
+              color="secondary"
+              variant="ghost"
               onclick={() => handleRemovePartner(partner.user)}
               icon={mdiClose}
-              size="16"
-              title={$t('stop_sharing_photos_with_user')}
+              size="small"
+              aria-label={$t('stop_sharing_photos_with_user')}
             />
           {/if}
         </div>

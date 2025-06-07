@@ -9,7 +9,7 @@
   import ControlAppBar from '$lib/components/shared-components/control-app-bar.svelte';
   import { AppRoute } from '$lib/constants';
   import { AssetInteraction } from '$lib/stores/asset-interaction.svelte';
-  import { AssetStore } from '$lib/stores/assets-store.svelte';
+  import { AssetStore } from '$lib/managers/timeline-manager/asset-store.svelte';
   import { AssetVisibility } from '@immich/sdk';
   import { mdiArrowLeft, mdiPlus } from '@mdi/js';
   import { onDestroy } from 'svelte';
@@ -42,7 +42,9 @@
   };
 </script>
 
-<main class="grid h-dvh bg-immich-bg pt-18 dark:bg-immich-dark-bg">
+<main class="grid h-dvh pt-18">
+  <AssetGrid enableRouting={true} {assetStore} {assetInteraction} onEscape={handleEscape} />
+
   {#if assetInteraction.selectionActive}
     <AssetSelectControlBar
       assets={assetInteraction.selectedAssets}
@@ -64,5 +66,4 @@
       {/snippet}
     </ControlAppBar>
   {/if}
-  <AssetGrid enableRouting={true} {assetStore} {assetInteraction} onEscape={handleEscape} />
 </main>

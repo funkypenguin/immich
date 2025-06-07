@@ -20,6 +20,20 @@ limit
 offset
   $7
 
+-- SearchRepository.searchStatistics
+select
+  count(*) as "total"
+from
+  "assets"
+  inner join "exif" on "assets"."id" = "exif"."assetId"
+where
+  "assets"."visibility" = $1
+  and "assets"."fileCreatedAt" >= $2
+  and "exif"."lensModel" = $3
+  and "assets"."ownerId" = any ($4::uuid[])
+  and "assets"."isFavorite" = $5
+  and "assets"."deletedAt" is null
+
 -- SearchRepository.searchRandom
 (
   select
@@ -64,6 +78,9 @@ limit
   $15
 
 -- SearchRepository.searchSmart
+begin
+set
+  local vchordrq.probes = 1
 select
   "assets".*
 from
@@ -83,8 +100,12 @@ limit
   $7
 offset
   $8
+commit
 
 -- SearchRepository.searchDuplicates
+begin
+set
+  local vchordrq.probes = 1
 with
   "cte" as (
     select
@@ -95,25 +116,29 @@ with
       "assets"
       inner join "smart_search" on "assets"."id" = "smart_search"."assetId"
     where
-      "assets"."ownerId" = any ($2::uuid[])
+      "assets"."visibility" in ('archive', 'timeline')
+      and "assets"."ownerId" = any ($2::uuid[])
       and "assets"."deletedAt" is null
-      and "assets"."visibility" != $3
-      and "assets"."type" = $4
-      and "assets"."id" != $5::uuid
+      and "assets"."type" = $3
+      and "assets"."id" != $4::uuid
       and "assets"."stackId" is null
     order by
-      smart_search.embedding <=> $6
+      "distance"
     limit
-      $7
+      $5
   )
 select
   *
 from
   "cte"
 where
-  "cte"."distance" <= $8
+  "cte"."distance" <= $6
+commit
 
 -- SearchRepository.searchFaces
+begin
+set
+  local vchordrq.probes = 1
 with
   "cte" as (
     select
@@ -129,16 +154,17 @@ with
       "assets"."ownerId" = any ($2::uuid[])
       and "assets"."deletedAt" is null
     order by
-      face_search.embedding <=> $3
+      "distance"
     limit
-      $4
+      $3
   )
 select
   *
 from
   "cte"
 where
-  "cte"."distance" <= $5
+  "cte"."distance" <= $4
+commit
 
 -- SearchRepository.searchPlaces
 select
@@ -229,7 +255,7 @@ from
   inner join "assets" on "assets"."id" = "exif"."assetId"
 where
   "ownerId" = any ($1::uuid[])
-  and "visibility" != $2
+  and "visibility" = $2
   and "deletedAt" is null
   and "state" is not null
 
@@ -241,7 +267,7 @@ from
   inner join "assets" on "assets"."id" = "exif"."assetId"
 where
   "ownerId" = any ($1::uuid[])
-  and "visibility" != $2
+  and "visibility" = $2
   and "deletedAt" is null
   and "city" is not null
 
@@ -253,7 +279,7 @@ from
   inner join "assets" on "assets"."id" = "exif"."assetId"
 where
   "ownerId" = any ($1::uuid[])
-  and "visibility" != $2
+  and "visibility" = $2
   and "deletedAt" is null
   and "make" is not null
 
@@ -265,6 +291,6 @@ from
   inner join "assets" on "assets"."id" = "exif"."assetId"
 where
   "ownerId" = any ($1::uuid[])
-  and "visibility" != $2
+  and "visibility" = $2
   and "deletedAt" is null
   and "model" is not null
