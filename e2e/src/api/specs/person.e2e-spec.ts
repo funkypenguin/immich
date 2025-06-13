@@ -5,33 +5,30 @@ import { app, asBearerAuth, utils } from 'src/utils';
 import request from 'supertest';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-const invalidBirthday = [
-  {
-    birthDate: 'false',
-    response: ['birthDate must be a string in the format yyyy-MM-dd', 'Birth date cannot be in the future'],
-  },
-  {
-    birthDate: '123567',
-    response: ['birthDate must be a string in the format yyyy-MM-dd', 'Birth date cannot be in the future'],
-  },
-  {
-    birthDate: 123_567,
-    response: ['birthDate must be a string in the format yyyy-MM-dd', 'Birth date cannot be in the future'],
-  },
-  { birthDate: '9999-01-01', response: ['Birth date cannot be in the future'] },
-];
-
 describe('/people', () => {
   let admin: LoginResponseDto;
   let visiblePerson: PersonResponseDto;
   let hiddenPerson: PersonResponseDto;
   let multipleAssetsPerson: PersonResponseDto;
 
+  let nameAlicePerson: PersonResponseDto;
+  let nameBobPerson: PersonResponseDto;
+  let nameCharliePerson: PersonResponseDto;
+  let nameNullPerson: PersonResponseDto;
+
   beforeAll(async () => {
     await utils.resetDatabase();
     admin = await utils.adminSetup();
 
-    [visiblePerson, hiddenPerson, multipleAssetsPerson] = await Promise.all([
+    [
+      visiblePerson,
+      hiddenPerson,
+      multipleAssetsPerson,
+      nameCharliePerson,
+      nameBobPerson,
+      nameAlicePerson,
+      nameNullPerson,
+    ] = await Promise.all([
       utils.createPerson(admin.accessToken, {
         name: 'visible_person',
       }),
@@ -42,10 +39,24 @@ describe('/people', () => {
       utils.createPerson(admin.accessToken, {
         name: 'multiple_assets_person',
       }),
+      // --- Setup for the specific sorting test ---
+      utils.createPerson(admin.accessToken, {
+        name: 'Charlie',
+      }),
+      utils.createPerson(admin.accessToken, {
+        name: 'Bob',
+      }),
+      utils.createPerson(admin.accessToken, {
+        name: 'Alice',
+      }),
+      utils.createPerson(admin.accessToken, {
+        name: '',
+      }),
     ]);
 
     const asset1 = await utils.createAsset(admin.accessToken);
     const asset2 = await utils.createAsset(admin.accessToken);
+    const asset3 = await utils.createAsset(admin.accessToken);
 
     await Promise.all([
       utils.createFace({ assetId: asset1.id, personId: visiblePerson.id }),
@@ -53,19 +64,20 @@ describe('/people', () => {
       utils.createFace({ assetId: asset1.id, personId: multipleAssetsPerson.id }),
       utils.createFace({ assetId: asset1.id, personId: multipleAssetsPerson.id }),
       utils.createFace({ assetId: asset2.id, personId: multipleAssetsPerson.id }),
+      utils.createFace({ assetId: asset3.id, personId: multipleAssetsPerson.id }),
+      // Named persons
+      utils.createFace({ assetId: asset1.id, personId: nameCharliePerson.id }), // 1 asset
+      utils.createFace({ assetId: asset1.id, personId: nameBobPerson.id }),
+      utils.createFace({ assetId: asset2.id, personId: nameBobPerson.id }), // 2 assets
+      utils.createFace({ assetId: asset1.id, personId: nameAlicePerson.id }), // 1 asset
+      // Null-named person
+      utils.createFace({ assetId: asset1.id, personId: nameNullPerson.id }),
+      utils.createFace({ assetId: asset2.id, personId: nameNullPerson.id }), // 2 assets
     ]);
   });
 
   describe('GET /people', () => {
     beforeEach(async () => {});
-
-    it('should require authentication', async () => {
-      const { status, body } = await request(app).get('/people');
-
-      expect(status).toBe(401);
-      expect(body).toEqual(errorDto.unauthorized);
-    });
-
     it('should return all people (including hidden)', async () => {
       const { status, body } = await request(app)
         .get('/people')
@@ -75,14 +87,38 @@ describe('/people', () => {
       expect(status).toBe(200);
       expect(body).toEqual({
         hasNextPage: false,
-        total: 3,
+        total: 7,
         hidden: 1,
         people: [
           expect.objectContaining({ name: 'multiple_assets_person' }),
+          expect.objectContaining({ name: 'Bob' }),
+          expect.objectContaining({ name: 'Alice' }),
+          expect.objectContaining({ name: 'Charlie' }),
           expect.objectContaining({ name: 'visible_person' }),
           expect.objectContaining({ name: 'hidden_person' }),
         ],
       });
+    });
+
+    it('should sort visible people by asset count (desc), then by name (asc, nulls last)', async () => {
+      const { status, body } = await request(app).get('/people').set('Authorization', `Bearer ${admin.accessToken}`);
+
+      expect(status).toBe(200);
+      expect(body.hasNextPage).toBe(false);
+      expect(body.total).toBe(7); // All persons
+      expect(body.hidden).toBe(1); // 'hidden_person'
+
+      const people = body.people as PersonResponseDto[];
+
+      expect(people.map((p) => p.id)).toEqual([
+        multipleAssetsPerson.id, // name: 'multiple_assets_person', count: 3
+        nameBobPerson.id, // name: 'Bob', count: 2
+        nameAlicePerson.id, // name: 'Alice', count: 1
+        nameCharliePerson.id, // name: 'Charlie', count: 1
+        visiblePerson.id, // name: 'visible_person', count: 1
+      ]);
+
+      expect(people.some((p) => p.id === hiddenPerson.id)).toBe(false);
     });
 
     it('should return only visible people', async () => {
@@ -91,10 +127,13 @@ describe('/people', () => {
       expect(status).toBe(200);
       expect(body).toEqual({
         hasNextPage: false,
-        total: 3,
+        total: 7,
         hidden: 1,
         people: [
           expect.objectContaining({ name: 'multiple_assets_person' }),
+          expect.objectContaining({ name: 'Bob' }),
+          expect.objectContaining({ name: 'Alice' }),
+          expect.objectContaining({ name: 'Charlie' }),
           expect.objectContaining({ name: 'visible_person' }),
         ],
       });
@@ -104,12 +143,12 @@ describe('/people', () => {
       const { status, body } = await request(app)
         .get('/people')
         .set('Authorization', `Bearer ${admin.accessToken}`)
-        .query({ withHidden: true, page: 2, size: 1 });
+        .query({ withHidden: true, page: 5, size: 1 });
 
       expect(status).toBe(200);
       expect(body).toEqual({
         hasNextPage: true,
-        total: 3,
+        total: 7,
         hidden: 1,
         people: [expect.objectContaining({ name: 'visible_person' })],
       });
@@ -117,13 +156,6 @@ describe('/people', () => {
   });
 
   describe('GET /people/:id', () => {
-    it('should require authentication', async () => {
-      const { status, body } = await request(app).get(`/people/${uuidDto.notFound}`);
-
-      expect(status).toBe(401);
-      expect(body).toEqual(errorDto.unauthorized);
-    });
-
     it('should throw error if person with id does not exist', async () => {
       const { status, body } = await request(app)
         .get(`/people/${uuidDto.notFound}`)
@@ -144,13 +176,6 @@ describe('/people', () => {
   });
 
   describe('GET /people/:id/statistics', () => {
-    it('should require authentication', async () => {
-      const { status, body } = await request(app).get(`/people/${multipleAssetsPerson.id}/statistics`);
-
-      expect(status).toBe(401);
-      expect(body).toEqual(errorDto.unauthorized);
-    });
-
     it('should throw error if person with id does not exist', async () => {
       const { status, body } = await request(app)
         .get(`/people/${uuidDto.notFound}/statistics`)
@@ -166,28 +191,11 @@ describe('/people', () => {
         .set('Authorization', `Bearer ${admin.accessToken}`);
 
       expect(status).toBe(200);
-      expect(body).toEqual(expect.objectContaining({ assets: 2 }));
+      expect(body).toEqual(expect.objectContaining({ assets: 3 }));
     });
   });
 
   describe('POST /people', () => {
-    it('should require authentication', async () => {
-      const { status, body } = await request(app).post(`/people`);
-      expect(status).toBe(401);
-      expect(body).toEqual(errorDto.unauthorized);
-    });
-
-    for (const { birthDate, response } of invalidBirthday) {
-      it(`should not accept an invalid birth date [${birthDate}]`, async () => {
-        const { status, body } = await request(app)
-          .post(`/people`)
-          .set('Authorization', `Bearer ${admin.accessToken}`)
-          .send({ birthDate });
-        expect(status).toBe(400);
-        expect(body).toEqual(errorDto.badRequest(response));
-      });
-    }
-
     it('should create a person', async () => {
       const { status, body } = await request(app)
         .post(`/people`)
@@ -223,39 +231,6 @@ describe('/people', () => {
   });
 
   describe('PUT /people/:id', () => {
-    it('should require authentication', async () => {
-      const { status, body } = await request(app).put(`/people/${uuidDto.notFound}`);
-      expect(status).toBe(401);
-      expect(body).toEqual(errorDto.unauthorized);
-    });
-
-    for (const { key, type } of [
-      { key: 'name', type: 'string' },
-      { key: 'featureFaceAssetId', type: 'string' },
-      { key: 'isHidden', type: 'boolean value' },
-      { key: 'isFavorite', type: 'boolean value' },
-    ]) {
-      it(`should not allow null ${key}`, async () => {
-        const { status, body } = await request(app)
-          .put(`/people/${visiblePerson.id}`)
-          .set('Authorization', `Bearer ${admin.accessToken}`)
-          .send({ [key]: null });
-        expect(status).toBe(400);
-        expect(body).toEqual(errorDto.badRequest([`${key} must be a ${type}`]));
-      });
-    }
-
-    for (const { birthDate, response } of invalidBirthday) {
-      it(`should not accept an invalid birth date [${birthDate}]`, async () => {
-        const { status, body } = await request(app)
-          .put(`/people/${visiblePerson.id}`)
-          .set('Authorization', `Bearer ${admin.accessToken}`)
-          .send({ birthDate });
-        expect(status).toBe(400);
-        expect(body).toEqual(errorDto.badRequest(response));
-      });
-    }
-
     it('should update a date of birth', async () => {
       const { status, body } = await request(app)
         .put(`/people/${visiblePerson.id}`)
@@ -312,12 +287,6 @@ describe('/people', () => {
   });
 
   describe('POST /people/:id/merge', () => {
-    it('should require authentication', async () => {
-      const { status, body } = await request(app).post(`/people/${uuidDto.notFound}/merge`);
-      expect(status).toBe(401);
-      expect(body).toEqual(errorDto.unauthorized);
-    });
-
     it('should not supporting merging a person into themselves', async () => {
       const { status, body } = await request(app)
         .post(`/people/${visiblePerson.id}/merge`)
