@@ -200,6 +200,7 @@ export type Album = Selectable<Albums> & {
 
 export type AuthSession = {
   id: string;
+  hasElevatedPermission: boolean;
 };
 
 export type Partner = {
@@ -208,6 +209,7 @@ export type Partner = {
   sharedWithId: string;
   sharedWith: User;
   createdAt: Date;
+  createId: string;
   updatedAt: Date;
   updateId: string;
   inTimeline: boolean;
@@ -231,8 +233,10 @@ export type Session = {
   id: string;
   createdAt: Date;
   updatedAt: Date;
+  expiresAt: Date | null;
   deviceOS: string;
   deviceType: string;
+  pinExpiresAt: Date | null;
 };
 
 export type Exif = Omit<Selectable<DatabaseExif>, 'updatedAt' | 'updateId'>;
@@ -306,7 +310,7 @@ export const columns = {
     'users.quotaSizeInBytes',
   ],
   authApiKey: ['api_keys.id', 'api_keys.permissions'],
-  authSession: ['sessions.id', 'sessions.updatedAt'],
+  authSession: ['sessions.id', 'sessions.updatedAt', 'sessions.pinExpiresAt'],
   authSharedLink: [
     'shared_links.id',
     'shared_links.userId',
@@ -338,6 +342,7 @@ export const columns = {
   syncAsset: [
     'id',
     'ownerId',
+    'originalFileName',
     'thumbhash',
     'checksum',
     'fileCreatedAt',
@@ -348,6 +353,13 @@ export const columns = {
     'isFavorite',
     'visibility',
     'updateId',
+    'duration',
+  ],
+  syncAlbumUser: [
+    'albums_shared_users_users.albumsId as albumId',
+    'albums_shared_users_users.usersId as userId',
+    'albums_shared_users_users.role',
+    'albums_shared_users_users.updateId',
   ],
   stack: ['stack.id', 'stack.primaryAssetId', 'ownerId'],
   syncAssetExif: [

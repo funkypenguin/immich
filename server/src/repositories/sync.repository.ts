@@ -7,8 +7,8 @@ import { DummyValue, GenerateSql } from 'src/decorators';
 import { SyncEntityType } from 'src/enum';
 import { SyncAck } from 'src/types';
 
-type auditTables = 'users_audit' | 'partners_audit' | 'assets_audit';
-type upsertTables = 'users' | 'partners' | 'assets' | 'exif';
+type AuditTables = 'users_audit' | 'partners_audit' | 'assets_audit' | 'albums_audit' | 'album_users_audit';
+type UpsertTables = 'users' | 'partners' | 'assets' | 'exif' | 'albums' | 'albums_shared_users_users';
 
 @Injectable()
 export class SyncRepository {
@@ -92,6 +92,31 @@ export class SyncRepository {
       .stream();
   }
 
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID] })
+  getPartnerBackfill(userId: string, afterCreateId?: string) {
+    return this.db
+      .selectFrom('partners')
+      .select(['sharedById', 'createId'])
+      .where('sharedWithId', '=', userId)
+      .$if(!!afterCreateId, (qb) => qb.where('createId', '>=', afterCreateId!))
+      .where('createdAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .orderBy('partners.createId', 'asc')
+      .execute();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, DummyValue.UUID], stream: true })
+  getPartnerAssetsBackfill(partnerId: string, afterUpdateId: string | undefined, beforeUpdateId: string) {
+    return this.db
+      .selectFrom('assets')
+      .select(columns.syncAsset)
+      .where('ownerId', '=', partnerId)
+      .where('updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .where('updateId', '<=', beforeUpdateId)
+      .$if(!!afterUpdateId, (eb) => eb.where('updateId', '>=', afterUpdateId!))
+      .orderBy('updateId', 'asc')
+      .stream();
+  }
+
   @GenerateSql({ params: [DummyValue.UUID], stream: true })
   getPartnerAssetsUpserts(userId: string, ack?: SyncAck) {
     return this.db
@@ -110,7 +135,6 @@ export class SyncRepository {
       .selectFrom('assets_audit')
       .select(['id', 'assetId'])
       .where('ownerId', '=', userId)
-      .$if(!!ack, (qb) => qb.where('id', '>', ack!.updateId))
       .$call((qb) => this.auditTableFilters(qb, ack))
       .stream();
   }
@@ -137,6 +161,20 @@ export class SyncRepository {
       .stream();
   }
 
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, DummyValue.UUID], stream: true })
+  getPartnerAssetExifsBackfill(partnerId: string, afterUpdateId: string | undefined, beforeUpdateId: string) {
+    return this.db
+      .selectFrom('exif')
+      .select(columns.syncAssetExif)
+      .innerJoin('assets', 'assets.id', 'exif.assetId')
+      .where('assets.ownerId', '=', partnerId)
+      .where('exif.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .where('exif.updateId', '<=', beforeUpdateId)
+      .$if(!!afterUpdateId, (eb) => eb.where('exif.updateId', '>=', afterUpdateId!))
+      .orderBy('exif.updateId', 'asc')
+      .stream();
+  }
+
   @GenerateSql({ params: [DummyValue.UUID], stream: true })
   getPartnerAssetExifsUpserts(userId: string, ack?: SyncAck) {
     return this.db
@@ -154,19 +192,135 @@ export class SyncRepository {
       .stream();
   }
 
-  private auditTableFilters<T extends keyof Pick<DB, auditTables>, D>(qb: SelectQueryBuilder<DB, T, D>, ack?: SyncAck) {
-    const builder = qb as SelectQueryBuilder<DB, auditTables, D>;
+  @GenerateSql({ params: [DummyValue.UUID], stream: true })
+  getAlbumDeletes(userId: string, ack?: SyncAck) {
+    return this.db
+      .selectFrom('albums_audit')
+      .select(['id', 'albumId'])
+      .where('userId', '=', userId)
+      .$call((qb) => this.auditTableFilters(qb, ack))
+      .stream();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID], stream: true })
+  getAlbumUpserts(userId: string, ack?: SyncAck) {
+    return this.db
+      .selectFrom('albums')
+      .distinctOn(['albums.id', 'albums.updateId'])
+      .where('albums.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .$if(!!ack, (qb) => qb.where('albums.updateId', '>', ack!.updateId))
+      .orderBy('albums.updateId', 'asc')
+      .leftJoin('albums_shared_users_users as album_users', 'albums.id', 'album_users.albumsId')
+      .where((eb) => eb.or([eb('albums.ownerId', '=', userId), eb('album_users.usersId', '=', userId)]))
+      .select([
+        'albums.id',
+        'albums.ownerId',
+        'albums.albumName as name',
+        'albums.description',
+        'albums.createdAt',
+        'albums.updatedAt',
+        'albums.albumThumbnailAssetId as thumbnailAssetId',
+        'albums.isActivityEnabled',
+        'albums.order',
+        'albums.updateId',
+      ])
+      .stream();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID], stream: true })
+  getAlbumUserDeletes(userId: string, ack?: SyncAck) {
+    return this.db
+      .selectFrom('album_users_audit')
+      .select(['id', 'userId', 'albumId'])
+      .where((eb) =>
+        eb(
+          'albumId',
+          'in',
+          eb
+            .selectFrom('albums')
+            .select(['id'])
+            .where('ownerId', '=', userId)
+            .union((eb) =>
+              eb.parens(
+                eb
+                  .selectFrom('albums_shared_users_users as albumUsers')
+                  .select(['albumUsers.albumsId as id'])
+                  .where('albumUsers.usersId', '=', userId),
+              ),
+            ),
+        ),
+      )
+      .$call((qb) => this.auditTableFilters(qb, ack))
+      .stream();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID] })
+  getAlbumBackfill(userId: string, afterCreateId?: string) {
+    return this.db
+      .selectFrom('albums_shared_users_users')
+      .select(['albumsId as id', 'createId'])
+      .where('usersId', '=', userId)
+      .$if(!!afterCreateId, (qb) => qb.where('createId', '>=', afterCreateId!))
+      .where('createdAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .orderBy('createId', 'asc')
+      .execute();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID, DummyValue.UUID, DummyValue.UUID], stream: true })
+  getAlbumUsersBackfill(albumId: string, afterUpdateId: string | undefined, beforeUpdateId: string) {
+    return this.db
+      .selectFrom('albums_shared_users_users')
+      .select(columns.syncAlbumUser)
+      .where('albumsId', '=', albumId)
+      .where('updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .where('updateId', '<=', beforeUpdateId)
+      .$if(!!afterUpdateId, (eb) => eb.where('updateId', '>=', afterUpdateId!))
+      .orderBy('updateId', 'asc')
+      .stream();
+  }
+
+  @GenerateSql({ params: [DummyValue.UUID], stream: true })
+  getAlbumUserUpserts(userId: string, ack?: SyncAck) {
+    return this.db
+      .selectFrom('albums_shared_users_users')
+      .select(columns.syncAlbumUser)
+      .where('albums_shared_users_users.updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
+      .$if(!!ack, (qb) => qb.where('albums_shared_users_users.updateId', '>', ack!.updateId))
+      .orderBy('albums_shared_users_users.updateId', 'asc')
+      .where((eb) =>
+        eb(
+          'albums_shared_users_users.albumsId',
+          'in',
+          eb
+            .selectFrom('albums')
+            .select(['id'])
+            .where('ownerId', '=', userId)
+            .union((eb) =>
+              eb.parens(
+                eb
+                  .selectFrom('albums_shared_users_users as albumUsers')
+                  .select(['albumUsers.albumsId as id'])
+                  .where('albumUsers.usersId', '=', userId),
+              ),
+            ),
+        ),
+      )
+      .stream();
+  }
+
+  private auditTableFilters<T extends keyof Pick<DB, AuditTables>, D>(qb: SelectQueryBuilder<DB, T, D>, ack?: SyncAck) {
+    const builder = qb as SelectQueryBuilder<DB, AuditTables, D>;
     return builder
       .where('deletedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
       .$if(!!ack, (qb) => qb.where('id', '>', ack!.updateId))
       .orderBy('id', 'asc') as SelectQueryBuilder<DB, T, D>;
   }
 
-  private upsertTableFilters<T extends keyof Pick<DB, upsertTables>, D>(
+  private upsertTableFilters<T extends keyof Pick<DB, UpsertTables>, D>(
     qb: SelectQueryBuilder<DB, T, D>,
     ack?: SyncAck,
   ) {
-    const builder = qb as SelectQueryBuilder<DB, upsertTables, D>;
+    const builder = qb as SelectQueryBuilder<DB, UpsertTables, D>;
     return builder
       .where('updatedAt', '<', sql.raw<Date>("now() - interval '1 millisecond'"))
       .$if(!!ack, (qb) => qb.where('updateId', '>', ack!.updateId))

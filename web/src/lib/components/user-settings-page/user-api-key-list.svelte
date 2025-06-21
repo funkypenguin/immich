@@ -1,19 +1,11 @@
 <script lang="ts">
-  import CircleIconButton from '$lib/components/elements/buttons/circle-icon-button.svelte';
-  import { dialogController } from '$lib/components/shared-components/dialog/dialog';
+  import { dateFormats } from '$lib/constants';
   import { modalManager } from '$lib/managers/modal-manager.svelte';
   import ApiKeyModal from '$lib/modals/ApiKeyModal.svelte';
   import ApiKeySecretModal from '$lib/modals/ApiKeySecretModal.svelte';
   import { locale } from '$lib/stores/preferences.store';
-  import {
-    createApiKey,
-    deleteApiKey,
-    getApiKeys,
-    Permission,
-    updateApiKey,
-    type ApiKeyResponseDto,
-  } from '@immich/sdk';
-  import { Button } from '@immich/ui';
+  import { createApiKey, deleteApiKey, getApiKeys, updateApiKey, type ApiKeyResponseDto } from '@immich/sdk';
+  import { Button, IconButton } from '@immich/ui';
   import { mdiPencilOutline, mdiTrashCanOutline } from '@mdi/js';
   import { t } from 'svelte-i18n';
   import { fade } from 'svelte/transition';
@@ -26,12 +18,6 @@
 
   let { keys = $bindable() }: Props = $props();
 
-  const format: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  };
-
   async function refreshKeys() {
     keys = await getApiKeys();
   }
@@ -39,7 +25,7 @@
   const handleCreate = async () => {
     const result = await modalManager.show(ApiKeyModal, {
       title: $t('new_api_key'),
-      apiKey: { name: 'API Key' },
+      apiKey: { name: 'API Key', permissions: [] },
       submitText: $t('create'),
     });
 
@@ -51,7 +37,7 @@
       const { secret } = await createApiKey({
         apiKeyCreateDto: {
           name: result.name,
-          permissions: [Permission.All],
+          permissions: result.permissions,
         },
       });
 
@@ -75,7 +61,7 @@
     }
 
     try {
-      await updateApiKey({ id: key.id, apiKeyUpdateDto: { name: result.name } });
+      await updateApiKey({ id: key.id, apiKeyUpdateDto: { name: result.name, permissions: result.permissions } });
       notificationController.show({
         message: $t('saved_api_key'),
         type: NotificationType.Info,
@@ -88,7 +74,7 @@
   };
 
   const handleDelete = async (key: ApiKeyResponseDto) => {
-    const isConfirmed = await dialogController.show({ prompt: $t('delete_api_key_prompt') });
+    const isConfirmed = await modalManager.showDialog({ prompt: $t('delete_api_key_prompt') });
     if (!isConfirmed) {
       return;
     }
@@ -119,35 +105,40 @@
           class="mb-4 flex h-12 w-full rounded-md border bg-gray-50 text-immich-primary dark:border-immich-dark-gray dark:bg-immich-dark-gray dark:text-immich-dark-primary"
         >
           <tr class="flex w-full place-items-center">
-            <th class="w-1/3 text-center text-sm font-medium">{$t('name')}</th>
-            <th class="w-1/3 text-center text-sm font-medium">{$t('created')}</th>
-            <th class="w-1/3 text-center text-sm font-medium">{$t('action')}</th>
+            <th class="w-1/4 text-center text-sm font-medium">{$t('name')}</th>
+            <th class="w-1/4 text-center text-sm font-medium">{$t('permission')}</th>
+            <th class="w-1/4 text-center text-sm font-medium">{$t('created')}</th>
+            <th class="w-1/4 text-center text-sm font-medium">{$t('action')}</th>
           </tr>
         </thead>
         <tbody class="block w-full overflow-y-auto rounded-md border dark:border-immich-dark-gray">
-          {#each keys as key, index (key.id)}
+          {#each keys as key (key.id)}
             <tr
-              class={`flex h-[80px] w-full place-items-center text-center dark:text-immich-dark-fg ${
-                index % 2 == 0 ? 'bg-subtle' : 'bg-immich-bg dark:bg-immich-dark-gray/50'
-              }`}
+              class="flex h-[80px] w-full place-items-center text-center dark:text-immich-dark-fg even:bg-subtle/20 odd:bg-subtle/80"
             >
-              <td class="w-1/3 text-ellipsis px-4 text-sm">{key.name}</td>
-              <td class="w-1/3 text-ellipsis px-4 text-sm"
-                >{new Date(key.createdAt).toLocaleDateString($locale, format)}
+              <td class="w-1/4 text-ellipsis px-4 text-sm overflow-hidden">{key.name}</td>
+              <td
+                class="w-1/4 text-ellipsis px-4 text-xs overflow-hidden line-clamp-3 break-all font-mono"
+                title={JSON.stringify(key.permissions, undefined, 2)}>{key.permissions}</td
+              >
+              <td class="w-1/4 text-ellipsis px-4 text-sm overflow-hidden"
+                >{new Date(key.createdAt).toLocaleDateString($locale, dateFormats.settings)}
               </td>
-              <td class="flex flex-row flex-wrap justify-center gap-x-2 gap-y-1 w-1/3">
-                <CircleIconButton
+              <td class="flex flex-row flex-wrap justify-center gap-x-2 gap-y-1 w-1/4">
+                <IconButton
+                  shape="round"
                   color="primary"
                   icon={mdiPencilOutline}
-                  title={$t('edit_key')}
-                  size="16"
+                  aria-label={$t('edit_key')}
+                  size="small"
                   onclick={() => handleUpdate(key)}
                 />
-                <CircleIconButton
+                <IconButton
+                  shape="round"
                   color="primary"
                   icon={mdiTrashCanOutline}
-                  title={$t('delete_key')}
-                  size="16"
+                  aria-label={$t('delete_key')}
+                  size="small"
                   onclick={() => handleDelete(key)}
                 />
               </td>

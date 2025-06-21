@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:immich_mobile/constants/enums.dart';
 import 'package:immich_mobile/domain/interfaces/exif.interface.dart';
-import 'package:immich_mobile/domain/interfaces/user.interface.dart';
 import 'package:immich_mobile/domain/models/user.model.dart';
 import 'package:immich_mobile/domain/services/user.service.dart';
 import 'package:immich_mobile/entities/asset.entity.dart';
 import 'package:immich_mobile/entities/backup_album.entity.dart';
+import 'package:immich_mobile/infrastructure/repositories/user.repository.dart';
 import 'package:immich_mobile/interfaces/asset.interface.dart';
 import 'package:immich_mobile/interfaces/asset_api.interface.dart';
 import 'package:immich_mobile/interfaces/asset_media.interface.dart';
@@ -52,7 +53,7 @@ class AssetService {
   final IAssetApiRepository _assetApiRepository;
   final IAssetRepository _assetRepository;
   final IExifInfoRepository _exifInfoRepository;
-  final IUserRepository _userRepository;
+  final IsarUserRepository _isarUserRepository;
   final IETagRepository _etagRepository;
   final IBackupAlbumRepository _backupRepository;
   final ApiService _apiService;
@@ -67,7 +68,7 @@ class AssetService {
     this._assetApiRepository,
     this._assetRepository,
     this._exifInfoRepository,
-    this._userRepository,
+    this._isarUserRepository,
     this._etagRepository,
     this._backupRepository,
     this._apiService,
@@ -84,7 +85,9 @@ class AssetService {
     final syncedUserIds = await _etagRepository.getAllIds();
     final List<UserDto> syncedUsers = syncedUserIds.isEmpty
         ? []
-        : (await _userRepository.getByUserIds(syncedUserIds)).nonNulls.toList();
+        : (await _isarUserRepository.getByUserIds(syncedUserIds))
+            .nonNulls
+            .toList();
     final Stopwatch sw = Stopwatch()..start();
     final bool changes = await _syncService.syncRemoteAssetsToDb(
       users: syncedUsers,
@@ -239,6 +242,9 @@ class AssetService {
 
       for (var element in assets) {
         element.isArchived = isArchived;
+        element.visibility = isArchived
+            ? AssetVisibilityEnum.archive
+            : AssetVisibilityEnum.timeline;
       }
 
       await _syncService.upsertAssetsWithExif(assets);
@@ -458,6 +464,7 @@ class AssetService {
     bool shouldDeletePermanently = false,
   }) async {
     final candidates = assets.where((a) => a.isRemote);
+
     if (candidates.isEmpty) {
       return;
     }
@@ -475,6 +482,7 @@ class AssetService {
             .where((asset) => asset.storage == AssetState.merged)
             .map((asset) {
             asset.remoteId = null;
+            asset.visibility = AssetVisibilityEnum.timeline;
             return asset;
           })
         : assets.where((asset) => asset.isRemote).map((asset) {
@@ -528,5 +536,22 @@ class AssetService {
   Future<List<Asset>> getMotionAssets() {
     final me = _userService.getMyUser();
     return _assetRepository.getMotionAssets(me.id);
+  }
+
+  Future<void> setVisibility(
+    List<Asset> assets,
+    AssetVisibilityEnum visibility,
+  ) async {
+    await _assetApiRepository.updateVisibility(
+      assets.map((asset) => asset.remoteId!).toList(),
+      visibility,
+    );
+
+    final updatedAssets = assets.map((asset) {
+      asset.visibility = visibility;
+      return asset;
+    }).toList();
+
+    await _assetRepository.updateAll(updatedAssets);
   }
 }
